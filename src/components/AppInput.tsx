@@ -1,156 +1,212 @@
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { useId } from "react";
+import {
+  InputAccessoryView,
+  Keyboard,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 
 import type {
-    KeyboardTypeOptions,
-    StyleProp,
-    ViewStyle
+  KeyboardTypeOptions,
 } from "react-native";
 
 import { useTheme } from "../context/ThemeContext";
 
 type AppInputProps = {
-  label?: string;
-
   value: string;
-
   onChangeText: (text: string) => void;
-
   placeholder?: string;
-
-  unit?: string;
-
   keyboardType?: KeyboardTypeOptions;
-
   multiline?: boolean;
-
-  maxLength?: number;
-
-  style?: StyleProp<ViewStyle>;
 };
 
 export default function AppInput({
-  label,
   value,
   onChangeText,
   placeholder,
-  unit,
   keyboardType = "default",
   multiline = false,
-  maxLength,
-  style,
 }: AppInputProps) {
   const { theme } = useTheme();
 
+  // Each input needs its own accessory-view ID so iOS knows
+  // which toolbar belongs to the currently focused input.
+  const generatedId = useId();
+
+  const accessoryId =
+    `app-input-${generatedId.replace(/:/g, "")}`;
+
   return (
-    <View style={style}>
-      {label && (
-        <Text
-          style={[
-            styles.label,
-            {
-              color: theme.colors.textSecondary,
-            },
-          ]}
-        >
-          {label}
-        </Text>
-      )}
+    <>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.muted}
+        keyboardType={keyboardType}
+        multiline={multiline}
 
-      <View
+        // Connect the keyboard to our custom toolbar on iOS.
+        inputAccessoryViewID={
+          Platform.OS === "ios"
+            ? accessoryId
+            : undefined
+        }
+
+        // Gives normal keyboards a Done action as well.
+        returnKeyType="done"
+
+        // For single-line inputs, pressing the keyboard's
+        // Return/Done key dismisses it.
+        onSubmitEditing={() => {
+          if (!multiline) {
+            Keyboard.dismiss();
+          }
+        }}
+
         style={[
-          styles.inputContainer,
-          multiline && styles.multilineContainer,
-          {
-            backgroundColor: theme.colors.input,
+          styles.input,
 
-            borderColor: theme.colors.border,
+          multiline &&
+            styles.multiline,
+
+          {
+            color: theme.colors.text,
+            backgroundColor:
+              theme.colors.input,
+            borderColor:
+              theme.colors.border,
           },
         ]}
-      >
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={theme.colors.muted}
-          keyboardType={keyboardType}
-          multiline={multiline}
-          maxLength={maxLength}
-          textAlignVertical={multiline ? "top" : "center"}
-          style={[
-            styles.input,
-            multiline && styles.multilineInput,
-            {
-              color: theme.colors.text,
-            },
-          ]}
-        />
+      />
 
-        {unit && !multiline && (
-          <Text
+      {/* ======================================================
+          iOS KEYBOARD TOOLBAR
+
+          Important for decimal-pad / number-pad because those
+          keyboards don't normally contain a Done button.
+          ====================================================== */}
+
+      {Platform.OS === "ios" && (
+        <InputAccessoryView
+          nativeID={accessoryId}
+        >
+          <View
             style={[
-              styles.unit,
+              styles.keyboardToolbar,
               {
-                color: theme.colors.muted,
+                backgroundColor:
+                  theme.colors.card,
+
+                borderTopColor:
+                  theme.colors.border,
               },
             ]}
           >
-            {unit}
-          </Text>
-        )}
-      </View>
+            <Pressable
+              onPress={Keyboard.dismiss}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.doneButton,
+
+                pressed && {
+                  opacity: 0.55,
+                },
+              ]}
+            >
+              <TextInputDoneLabel
+                color={theme.colors.primary}
+              />
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      )}
+    </>
+  );
+}
+
+/*
+ * Tiny internal component so AppInput doesn't need to depend
+ * on AppText. This keeps the basic input component independent.
+ */
+function TextInputDoneLabel({
+  color,
+}: {
+  color: string;
+}) {
+  return (
+    <View>
+      <TextLabel color={color} />
     </View>
   );
 }
 
+function TextLabel({
+  color,
+}: {
+  color: string;
+}) {
+  // require here would be unnecessary; React Native View cannot
+  // render text directly, so this small component uses Text.
+  const { Text } = require("react-native");
+
+  return (
+    <Text
+      style={[
+        styles.doneText,
+        { color },
+      ]}
+    >
+      Done
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 8,
+  input: {
+    minHeight: 54,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 16,
   },
 
-  inputContainer: {
-    minHeight: 60,
+  multiline: {
+    minHeight: 100,
+    paddingTop: 15,
+    textAlignVertical: "top",
+  },
+
+  // ----------------------------------------------------------
+  // KEYBOARD TOOLBAR
+  // ----------------------------------------------------------
+
+  keyboardToolbar: {
+    minHeight: 46,
+    borderTopWidth:
+      StyleSheet.hairlineWidth,
 
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
 
-    borderRadius: 16,
-    borderWidth: 1,
-
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
   },
 
-  multilineContainer: {
-    minHeight: 110,
+  doneButton: {
+    minWidth: 58,
+    minHeight: 32,
 
-    alignItems: "stretch",
-
-    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  input: {
-    flex: 1,
-
-    fontSize: 18,
+  doneText: {
+    fontSize: 16,
     fontWeight: "700",
-
-    padding: 0,
-  },
-
-  multilineInput: {
-    minHeight: 80,
-
-    fontSize: 14,
-    fontWeight: "400",
-
-    lineHeight: 20,
-  },
-
-  unit: {
-    fontSize: 12,
-    fontWeight: "700",
-
-    marginLeft: 6,
   },
 });

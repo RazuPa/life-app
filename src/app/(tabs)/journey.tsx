@@ -1,521 +1,998 @@
-import { useState } from "react";
+import { useCallback, useRef } from "react";
 
-import { Alert, Modal, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Animated,
+  StyleSheet,
+  View,
+} from "react-native";
 
-import AppButton from "../../components/AppButton";
+import { useFocusEffect } from "expo-router";
+
 import AppCard from "../../components/AppCard";
 import AppScreen from "../../components/AppScreen";
 import AppText from "../../components/AppText";
-import SectionHeader from "../../components/SectionHeader";
 
-import { Activity, useApp } from "../../context/AppContext";
-
+import { useApp } from "../../context/AppContext";
 import { useTheme } from "../../context/ThemeContext";
 
+// ============================================================
+// JOURNEY SCREEN
+// ============================================================
+
 export default function JourneyScreen() {
-  const { activities, totalXP, deleteActivity } = useApp();
+  const {
+    activities,
+    totalXP,
+    deleteActivity,
+  } = useApp();
 
-  const { theme } = useTheme();
+  const {
+    theme,
+    themeName,
+  } = useTheme();
 
-  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
-    null,
+  // ==========================================================
+  // THEME
+  // ==========================================================
+
+  const isNature =
+    themeName === "nature";
+
+  const isDungeon =
+    themeName === "dungeon";
+
+  const isFuture =
+    themeName === "future";
+
+  // ==========================================================
+  // SCREEN ANIMATION VALUES
+  // ==========================================================
+
+  const screenOpacity =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const screenTranslateY =
+    useRef(
+      new Animated.Value(18)
+    ).current;
+
+  const screenScale =
+    useRef(
+      new Animated.Value(
+        isFuture ? 0.975 : 1
+      )
+    ).current;
+
+  // ==========================================================
+  // HEADER ANIMATION
+  // ==========================================================
+
+  const headerOpacity =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const headerTranslateY =
+    useRef(
+      new Animated.Value(10)
+    ).current;
+
+  // ==========================================================
+  // XP CARD ANIMATION
+  // ==========================================================
+
+  const xpOpacity =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const xpTranslateY =
+    useRef(
+      new Animated.Value(14)
+    ).current;
+
+  const xpScale =
+    useRef(
+      new Animated.Value(0.96)
+    ).current;
+
+  // ==========================================================
+  // LIST ANIMATION
+  // ==========================================================
+
+  const listOpacity =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const listTranslateY =
+    useRef(
+      new Animated.Value(18)
+    ).current;
+
+  // ==========================================================
+  // ENTRANCE ANIMATION
+  //
+  // Runs again whenever Journey receives focus.
+  // ==========================================================
+
+  useFocusEffect(
+    useCallback(() => {
+      // ------------------------------------------------------
+      // RESET
+      // ------------------------------------------------------
+
+      screenOpacity.setValue(0);
+
+      screenTranslateY.setValue(
+        isDungeon
+          ? 10
+          : 18
+      );
+
+      screenScale.setValue(
+        isFuture
+          ? 0.975
+          : 1
+      );
+
+      headerOpacity.setValue(0);
+      headerTranslateY.setValue(10);
+
+      xpOpacity.setValue(0);
+      xpTranslateY.setValue(14);
+      xpScale.setValue(0.96);
+
+      listOpacity.setValue(0);
+      listTranslateY.setValue(18);
+
+      // ------------------------------------------------------
+      // SCREEN
+      // ------------------------------------------------------
+
+      const screenAnimation =
+        Animated.parallel([
+          Animated.timing(
+            screenOpacity,
+            {
+              toValue: 1,
+
+              duration:
+                isDungeon
+                  ? 120
+                  : 190,
+
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            screenTranslateY,
+            {
+              toValue: 0,
+
+              speed:
+                isDungeon
+                  ? 34
+                  : 20,
+
+              bounciness:
+                isDungeon
+                  ? 0
+                  : 5,
+
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            screenScale,
+            {
+              toValue: 1,
+
+              speed:
+                isFuture
+                  ? 20
+                  : 25,
+
+              bounciness:
+                isFuture
+                  ? 3
+                  : 0,
+
+              useNativeDriver: true,
+            }
+          ),
+        ]);
+
+      // ------------------------------------------------------
+      // HEADER
+      // ------------------------------------------------------
+
+      const headerAnimation =
+        Animated.parallel([
+          Animated.timing(
+            headerOpacity,
+            {
+              toValue: 1,
+              duration: 170,
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            headerTranslateY,
+            {
+              toValue: 0,
+              speed: 24,
+              bounciness:
+                isDungeon
+                  ? 0
+                  : 4,
+              useNativeDriver: true,
+            }
+          ),
+        ]);
+
+      // ------------------------------------------------------
+      // XP CARD
+      // ------------------------------------------------------
+
+      const xpAnimation =
+        Animated.parallel([
+          Animated.timing(
+            xpOpacity,
+            {
+              toValue: 1,
+              duration: 170,
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            xpTranslateY,
+            {
+              toValue: 0,
+              speed: 22,
+              bounciness:
+                isDungeon
+                  ? 0
+                  : 5,
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            xpScale,
+            {
+              toValue: 1,
+              speed: 20,
+              bounciness:
+                isDungeon
+                  ? 0
+                  : 6,
+              useNativeDriver: true,
+            }
+          ),
+        ]);
+
+      // ------------------------------------------------------
+      // ACTIVITY LIST
+      // ------------------------------------------------------
+
+      const listAnimation =
+        Animated.parallel([
+          Animated.timing(
+            listOpacity,
+            {
+              toValue: 1,
+              duration: 180,
+              useNativeDriver: true,
+            }
+          ),
+
+          Animated.spring(
+            listTranslateY,
+            {
+              toValue: 0,
+              speed: 20,
+              bounciness:
+                isDungeon
+                  ? 0
+                  : 5,
+              useNativeDriver: true,
+            }
+          ),
+        ]);
+
+      // ------------------------------------------------------
+      // PLAY
+      // ------------------------------------------------------
+
+      Animated.sequence([
+        screenAnimation,
+
+        Animated.stagger(
+          isDungeon
+            ? 35
+            : 55,
+          [
+            headerAnimation,
+            xpAnimation,
+            listAnimation,
+          ]
+        ),
+      ]).start();
+
+      // ------------------------------------------------------
+      // CLEANUP
+      // ------------------------------------------------------
+
+      return () => {
+        screenOpacity.stopAnimation();
+        screenTranslateY.stopAnimation();
+        screenScale.stopAnimation();
+
+        headerOpacity.stopAnimation();
+        headerTranslateY.stopAnimation();
+
+        xpOpacity.stopAnimation();
+        xpTranslateY.stopAnimation();
+        xpScale.stopAnimation();
+
+        listOpacity.stopAnimation();
+        listTranslateY.stopAnimation();
+      };
+    }, [
+      headerOpacity,
+      headerTranslateY,
+      isDungeon,
+      isFuture,
+      listOpacity,
+      listTranslateY,
+      screenOpacity,
+      screenScale,
+      screenTranslateY,
+      xpOpacity,
+      xpScale,
+      xpTranslateY,
+    ])
   );
 
-  function formatDate(date: Date) {
-    return new Intl.DateTimeFormat("en", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(new Date(date));
-  }
+  // ==========================================================
+  // DELETE ACTIVITY
+  // ==========================================================
 
-  function formatTime(date: Date) {
-    return new Intl.DateTimeFormat("en", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(date));
-  }
-
-  function handleDelete(activity: Activity) {
+  function remove(id: number) {
     Alert.alert(
       "Delete activity?",
-      "This activity and its XP will be removed from your journey.",
+      "Its XP will also be removed.",
       [
         {
           text: "Cancel",
           style: "cancel",
         },
+
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            deleteActivity(activity.id);
-            setSelectedActivity(null);
-          },
+
+          onPress: () =>
+            deleteActivity(id),
         },
-      ],
+      ]
     );
   }
 
+  // ==========================================================
+  // THEME VALUES
+  // ==========================================================
+
+  const journeyTitle =
+    isDungeon
+      ? "JOURNEY"
+      : isFuture
+        ? "JOURNEY LOG"
+        : "Journey";
+
+  const journeySubtitle =
+    isDungeon
+      ? "The chronicle of your adventures."
+      : isFuture
+        ? "Permanent activity archive."
+        : "Your permanent real-life history.";
+
+  const xpLabel =
+    isDungeon
+      ? "TOTAL EXPERIENCE"
+      : isFuture
+        ? "LIFETIME XP // TOTAL"
+        : "LIFETIME XP";
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
+
   return (
-    <>
-      <AppScreen>
-        <View style={styles.header}>
-          <View style={styles.headerText}>
-            <AppText variant="pageTitle">Journey</AppText>
+    <AppScreen>
+      <Animated.View
+        style={[
+          styles.screen,
 
-            <AppText variant="secondary">Your real-life progress</AppText>
-          </View>
+          {
+            opacity:
+              screenOpacity,
 
-          <AppCard variant="alt" padding={0} style={styles.headerIcon}>
-            <AppText style={styles.headerEmoji}>📖</AppText>
-          </AppCard>
-        </View>
+            transform: [
+              {
+                translateY:
+                  screenTranslateY,
+              },
 
-        <AppCard style={styles.lifetimeCard}>
-          <View style={styles.lifetimeContent}>
-            <AppText variant="label">LIFETIME XP</AppText>
+              {
+                scale:
+                  screenScale,
+              },
+            ],
+          },
+        ]}
+      >
+        {/* ====================================================
+            HEADER
+        ==================================================== */}
 
-            <AppText variant="xp" style={styles.lifetimeXP}>
-              {totalXP}
-            </AppText>
+        <Animated.View
+          style={{
+            opacity:
+              headerOpacity,
 
-            <AppText variant="secondary">
-              XP earned across your entire journey
-            </AppText>
-          </View>
+            transform: [
+              {
+                translateY:
+                  headerTranslateY,
+              },
+            ],
+          }}
+        >
+          <AppText
+            variant="pageTitle"
+            style={[
+              isDungeon &&
+                styles.dungeonTitle,
 
-          <AppText style={styles.lifetimeEmoji}>✨</AppText>
-        </AppCard>
+              isFuture &&
+                styles.futureTitle,
+            ]}
+          >
+            {journeyTitle}
+          </AppText>
 
-        <SectionHeader
-          title="Activity history"
-          actionLabel={`${activities.length} ${
-            activities.length === 1 ? "activity" : "activities"
-          }`}
-        />
+          <AppText
+            variant="secondary"
+          >
+            {journeySubtitle}
+          </AppText>
+        </Animated.View>
 
-        {activities.length === 0 ? (
-          <AppCard style={styles.emptyCard}>
+        {/* ====================================================
+            LIFETIME XP
+        ==================================================== */}
+
+        <Animated.View
+          style={{
+            opacity:
+              xpOpacity,
+
+            transform: [
+              {
+                translateY:
+                  xpTranslateY,
+              },
+
+              {
+                scale:
+                  xpScale,
+              },
+            ],
+          }}
+        >
+          <AppCard
+            variant="alt"
+            style={[
+              styles.total,
+
+              isDungeon &&
+                styles.dungeonTotal,
+
+              isFuture &&
+                styles.futureTotal,
+            ]}
+          >
             <View
+              style={
+                styles.totalHeader
+              }
+            >
+              <AppText
+                variant="label"
+              >
+                {xpLabel}
+              </AppText>
+
+              <AppText
+                style={[
+                  styles.totalSymbol,
+
+                  {
+                    color:
+                      theme.colors.xp,
+                  },
+                ]}
+              >
+                {isDungeon
+                  ? "◆"
+                  : isFuture
+                    ? "◈"
+                    : "✦"}
+              </AppText>
+            </View>
+
+            <AppText
+              variant="pageTitle"
               style={[
-                styles.emptyIcon,
+                styles.totalXP,
+
                 {
-                  backgroundColor: theme.colors.cardAlt,
+                  color:
+                    theme.colors.xp,
                 },
               ]}
             >
-              <AppText style={styles.emptyEmoji}>🗺️</AppText>
-            </View>
+              {totalXP}
+            </AppText>
 
-            <AppText variant="title">Your journey starts here</AppText>
-
-            <AppText variant="secondary" style={styles.emptyText}>
-              Activities you complete will become part of your permanent
-              history.
+            <AppText
+              variant="caption"
+            >
+              {activities.length}{" "}
+              {activities.length === 1
+                ? "activity"
+                : "activities"}{" "}
+              recorded
             </AppText>
           </AppCard>
-        ) : (
-          <View style={styles.activityList}>
-            {activities.map((activity) => (
+        </Animated.View>
+
+        {/* ====================================================
+            ACTIVITY HISTORY
+        ==================================================== */}
+
+        <Animated.View
+          style={[
+            styles.list,
+
+            {
+              opacity:
+                listOpacity,
+
+              transform: [
+                {
+                  translateY:
+                    listTranslateY,
+                },
+              ],
+            },
+          ]}
+        >
+          {activities.map(
+            (activity) => (
               <AppCard
-                key={activity.id}
-                onPress={() => setSelectedActivity(activity)}
-                style={styles.activityCard}
+                key={
+                  activity.id
+                }
+                onPress={() =>
+                  remove(
+                    activity.id
+                  )
+                }
+                style={[
+                  styles.item,
+
+                  isDungeon &&
+                    styles.dungeonItem,
+
+                  isFuture &&
+                    styles.futureItem,
+                ]}
               >
+                {/* ICON */}
+
                 <View
                   style={[
-                    styles.activityIconContainer,
+                    styles.iconContainer,
+
                     {
-                      backgroundColor: theme.colors.cardAlt,
+                      backgroundColor:
+                        theme.colors
+                          .cardAlt,
+
+                      borderColor:
+                        theme.colors
+                          .border,
                     },
+
+                    isDungeon &&
+                      styles.dungeonIcon,
+
+                    isFuture &&
+                      styles.futureIcon,
                   ]}
                 >
-                  <AppText style={styles.activityIcon}>{activity.icon}</AppText>
+                  <AppText
+                    style={
+                      styles.icon
+                    }
+                  >
+                    {
+                      activity.icon
+                    }
+                  </AppText>
                 </View>
 
-                <View style={styles.activityContent}>
-                  <AppText variant="title" style={styles.activityTitle}>
-                    {activity.title}
+                {/* CONTENT */}
+
+                <View
+                  style={
+                    styles.flex
+                  }
+                >
+                  <AppText
+                    variant="title"
+                    style={
+                      styles.title
+                    }
+                  >
+                    {
+                      activity.title
+                    }
                   </AppText>
 
-                  <AppText variant="secondary">{activity.details}</AppText>
-
-                  <AppText variant="caption" style={styles.activityDate}>
-                    {formatDate(activity.createdAt)}
-                    {" • "}
-                    {formatTime(activity.createdAt)}
+                  <AppText
+                    variant="secondary"
+                  >
+                    {
+                      activity.details
+                    }
                   </AppText>
 
-                  {activity.note !== "" && (
+                  {!!activity.note && (
                     <AppText
                       variant="caption"
-                      numberOfLines={1}
-                      style={styles.activityNote}
+                      style={
+                        styles.note
+                      }
                     >
-                      {activity.note}
+                      “
+                      {
+                        activity.note
+                      }
+                      ”
                     </AppText>
                   )}
+
+                  <AppText
+                    variant="caption"
+                    style={
+                      styles.date
+                    }
+                  >
+                    {activity.createdAt.toLocaleDateString()}
+                    {" • "}
+                    {activity.createdAt.toLocaleTimeString(
+                      [],
+                      {
+                        hour:
+                          "2-digit",
+
+                        minute:
+                          "2-digit",
+                      }
+                    )}
+                  </AppText>
                 </View>
 
-                <View style={styles.xpContainer}>
-                  <AppText variant="xp">+{activity.xp}</AppText>
+                {/* XP */}
 
-                  <AppText variant="caption">XP</AppText>
+                <View
+                  style={
+                    styles.xpContainer
+                  }
+                >
+                  <AppText
+                    variant="xp"
+                    numberOfLines={1}
+                  >
+                    +
+                    {
+                      activity.xp
+                    }
+                  </AppText>
+
+                  <AppText
+                    variant="caption"
+                    style={
+                      styles.xpText
+                    }
+                  >
+                    XP
+                  </AppText>
                 </View>
               </AppCard>
-            ))}
-          </View>
-        )}
-      </AppScreen>
+            )
+          )}
 
-      <Modal
-        visible={selectedActivity !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedActivity(null)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setSelectedActivity(null)}
-        >
-          <Pressable
-            style={[
-              styles.modalCard,
-              {
-                backgroundColor: theme.colors.card,
-                borderColor: theme.colors.border,
-              },
-            ]}
-            onPress={() => {}}
+          {/* ==================================================
+              EMPTY STATE
+          ================================================== */}
+
+          {activities.length ===
+            0 && (
+            <AppCard
+              style={[
+                styles.emptyCard,
+
+                isDungeon &&
+                  styles.dungeonItem,
+
+                isFuture &&
+                  styles.futureItem,
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.emptyIcon,
+
+                  {
+                    color:
+                      theme.colors.xp,
+                  },
+                ]}
+              >
+                {isDungeon
+                  ? "◆"
+                  : isFuture
+                    ? "◈"
+                    : "✦"}
+              </AppText>
+
+              <View
+                style={
+                  styles.flex
+                }
+              >
+                <AppText
+                  variant="title"
+                >
+                  Your journey begins here
+                </AppText>
+
+                <AppText
+                  variant="secondary"
+                >
+                  Log your first activity to start building your history.
+                </AppText>
+              </View>
+            </AppCard>
+          )}
+        </Animated.View>
+
+        {/* ====================================================
+            HINT
+        ==================================================== */}
+
+        {activities.length >
+          0 && (
+          <Animated.View
+            style={{
+              opacity:
+                listOpacity,
+            }}
           >
-            {selectedActivity && (
-              <>
-                <View style={styles.modalHeader}>
-                  <View
-                    style={[
-                      styles.modalIcon,
-                      {
-                        backgroundColor: theme.colors.cardAlt,
-                      },
-                    ]}
-                  >
-                    <AppText style={styles.modalEmoji}>
-                      {selectedActivity.icon}
-                    </AppText>
-                  </View>
+            <AppText
+              variant="caption"
+              style={[
+                styles.hint,
 
-                  <Pressable
-                    style={[
-                      styles.closeButton,
-                      {
-                        backgroundColor: theme.colors.cardAlt,
-                      },
-                    ]}
-                    onPress={() => setSelectedActivity(null)}
-                  >
-                    <AppText style={styles.closeText}>×</AppText>
-                  </Pressable>
-                </View>
-
-                <AppText variant="pageTitle" style={styles.modalTitle}>
-                  {selectedActivity.title}
-                </AppText>
-
-                <AppText variant="secondary">
-                  {selectedActivity.details}
-                </AppText>
-
-                <AppCard variant="alt" style={styles.xpCard}>
-                  <AppText variant="label">XP EARNED</AppText>
-
-                  <AppText variant="xp" style={styles.xpCardValue}>
-                    +{selectedActivity.xp} XP
-                  </AppText>
-                </AppCard>
-
-                <View
-                  style={[
-                    styles.detailRow,
-                    {
-                      borderBottomColor: theme.colors.border,
-                    },
-                  ]}
-                >
-                  <AppText variant="secondary">Date</AppText>
-
-                  <AppText style={styles.detailValue}>
-                    {formatDate(selectedActivity.createdAt)}
-                  </AppText>
-                </View>
-
-                <View
-                  style={[
-                    styles.detailRow,
-                    {
-                      borderBottomColor: theme.colors.border,
-                    },
-                  ]}
-                >
-                  <AppText variant="secondary">Time</AppText>
-
-                  <AppText style={styles.detailValue}>
-                    {formatTime(selectedActivity.createdAt)}
-                  </AppText>
-                </View>
-
-                {selectedActivity.note !== "" && (
-                  <View style={styles.noteSection}>
-                    <AppText variant="secondary">Note</AppText>
-
-                    <AppText style={styles.noteText}>
-                      {selectedActivity.note}
-                    </AppText>
-                  </View>
-                )}
-
-                <AppButton
-                  title="Delete activity"
-                  variant="danger"
-                  onPress={() => handleDelete(selectedActivity)}
-                  style={styles.deleteButton}
-                />
-              </>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
+                {
+                  color:
+                    theme.colors.muted,
+                },
+              ]}
+            >
+              Tap an activity to delete it.
+            </AppText>
+          </Animated.View>
+        )}
+      </Animated.View>
+    </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-
-    marginBottom: 28,
-  },
-
-  headerText: {
-    flex: 1,
-  },
-
-  headerIcon: {
-    width: 48,
-    height: 48,
-
-    borderRadius: 16,
-
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  headerEmoji: {
-    fontSize: 24,
-  },
-
-  lifetimeCard: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    padding: 20,
-
-    marginBottom: 30,
-  },
-
-  lifetimeContent: {
-    flex: 1,
-  },
-
-  lifetimeXP: {
-    fontSize: 34,
-
-    marginTop: 3,
-    marginBottom: 4,
-  },
-
-  lifetimeEmoji: {
-    fontSize: 38,
-
-    marginLeft: 15,
-  },
-
-  emptyCard: {
-    alignItems: "center",
-
-    padding: 28,
-  },
-
-  emptyIcon: {
-    width: 68,
-    height: 68,
-
-    borderRadius: 22,
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    marginBottom: 15,
-  },
-
-  emptyEmoji: {
-    fontSize: 31,
-  },
-
-  emptyText: {
-    textAlign: "center",
-
-    marginTop: 7,
-  },
-
-  activityList: {
-    gap: 12,
-  },
-
-  activityCard: {
-    flexDirection: "row",
-    alignItems: "center",
-
-    padding: 14,
-  },
-
-  activityIconContainer: {
-    width: 50,
-    height: 50,
-
-    borderRadius: 15,
-
-    justifyContent: "center",
-    alignItems: "center",
-
-    marginRight: 13,
-  },
-
-  activityIcon: {
-    fontSize: 24,
-  },
-
-  activityContent: {
-    flex: 1,
-  },
-
-  activityTitle: {
-    fontSize: 15,
-
-    marginBottom: 2,
-  },
-
-  activityDate: {
-    marginTop: 5,
-  },
-
-  activityNote: {
-    marginTop: 4,
-  },
-
-  xpContainer: {
-    alignItems: "flex-end",
-
-    marginLeft: 8,
-  },
-
-  modalOverlay: {
-    flex: 1,
-
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-
-    justifyContent: "center",
-
-    paddingHorizontal: 22,
-  },
-
-  modalCard: {
-    borderRadius: 26,
-    borderWidth: 1,
-
-    padding: 22,
-  },
-
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-
-    marginBottom: 18,
-  },
-
-  modalIcon: {
-    width: 58,
-    height: 58,
-
-    borderRadius: 18,
-
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  modalEmoji: {
-    fontSize: 29,
-  },
-
-  closeButton: {
-    width: 38,
-    height: 38,
-
-    borderRadius: 19,
-
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  closeText: {
-    fontSize: 27,
-    lineHeight: 29,
-  },
-
-  modalTitle: {
-    fontSize: 25,
-
-    marginBottom: 5,
-  },
-
-  xpCard: {
-    marginTop: 20,
-    marginBottom: 8,
-  },
-
-  xpCardValue: {
-    fontSize: 23,
-
-    marginTop: 3,
-  },
-
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-
-    paddingVertical: 15,
-
-    borderBottomWidth: 1,
-  },
-
-  detailValue: {
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  noteSection: {
-    paddingTop: 15,
-  },
-
-  noteText: {
-    marginTop: 7,
-  },
-
-  deleteButton: {
-    marginTop: 24,
-  },
-});
+// ============================================================
+// STYLES
+// ============================================================
+
+const styles =
+  StyleSheet.create({
+    screen: {
+      width: "100%",
+    },
+
+    // ========================================================
+    // HEADER
+    // ========================================================
+
+    dungeonTitle: {
+      fontFamily: "Menlo",
+      letterSpacing: 1.4,
+    },
+
+    futureTitle: {
+      letterSpacing: 1,
+    },
+
+    // ========================================================
+    // TOTAL XP
+    // ========================================================
+
+    total: {
+      marginTop: 22,
+    },
+
+    totalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+    },
+
+    totalSymbol: {
+      fontSize: 17,
+      fontWeight: "900",
+    },
+
+    totalXP: {
+      marginTop: 5,
+      marginBottom: 2,
+    },
+
+    dungeonTotal: {
+      borderRadius: 3,
+      borderWidth: 2,
+    },
+
+    futureTotal: {
+      borderRadius: 8,
+      borderWidth: 1,
+    },
+
+    // ========================================================
+    // LIST
+    // ========================================================
+
+    list: {
+      marginTop: 24,
+      gap: 10,
+    },
+
+    item: {
+      flexDirection: "row",
+      alignItems:
+        "flex-start",
+    },
+
+    dungeonItem: {
+      borderRadius: 3,
+      borderWidth: 2,
+    },
+
+    futureItem: {
+      borderRadius: 8,
+    },
+
+    // ========================================================
+    // ICON
+    // ========================================================
+
+    iconContainer: {
+      width: 43,
+      height: 43,
+
+      marginRight: 12,
+
+      borderWidth: 1,
+      borderRadius: 12,
+
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
+
+    dungeonIcon: {
+      borderRadius: 2,
+    },
+
+    futureIcon: {
+      borderRadius: 7,
+    },
+
+    icon: {
+      fontSize: 24,
+    },
+
+    // ========================================================
+    // CONTENT
+    // ========================================================
+
+    flex: {
+      flex: 1,
+      minWidth: 0,
+    },
+
+    title: {
+      fontSize: 16,
+    },
+
+    note: {
+      marginTop: 6,
+      marginBottom: 3,
+    },
+
+    date: {
+      marginTop: 4,
+    },
+
+    // ========================================================
+    // XP
+    // ========================================================
+
+    xpContainer: {
+      marginLeft: 10,
+
+      alignItems:
+        "flex-end",
+
+      flexShrink: 0,
+    },
+
+    xpText: {
+      fontSize: 8,
+      marginTop: 1,
+    },
+
+    // ========================================================
+    // EMPTY
+    // ========================================================
+
+    emptyCard: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    emptyIcon: {
+      fontSize: 23,
+      marginRight: 13,
+    },
+
+    // ========================================================
+    // HINT
+    // ========================================================
+
+    hint: {
+      textAlign: "center",
+      marginTop: 20,
+    },
+  });

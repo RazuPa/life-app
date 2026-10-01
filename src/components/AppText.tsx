@@ -1,12 +1,23 @@
 import type { ReactNode } from "react";
 
-import { StyleSheet, Text } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+} from "react-native";
 
-import type { StyleProp, TextStyle } from "react-native";
+import type {
+  StyleProp,
+  TextStyle,
+} from "react-native";
 
 import { useTheme } from "../context/ThemeContext";
 
-type TextVariant =
+// ============================================================
+// TYPES
+// ============================================================
+
+type Variant =
   | "pageTitle"
   | "title"
   | "subtitle"
@@ -16,47 +27,77 @@ type TextVariant =
   | "caption"
   | "xp";
 
-type AppTextProps = {
-  children: ReactNode;
-  variant?: TextVariant;
-  style?: StyleProp<TextStyle>;
-  numberOfLines?: number;
-};
+// ============================================================
+// COMPONENT
+// ============================================================
 
 export default function AppText({
   children,
   variant = "body",
   style,
   numberOfLines,
-}: AppTextProps) {
-  const { theme } = useTheme();
+}: {
+  children: ReactNode;
+  variant?: Variant;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+}) {
+  const {
+    theme,
+    themeName,
+  } = useTheme();
 
-  function getColor() {
-    switch (variant) {
-      case "secondary":
-      case "subtitle":
-        return theme.colors.textSecondary;
+  // ==========================================================
+  // COLOR
+  // ==========================================================
 
-      case "label":
-      case "caption":
-        return theme.colors.muted;
+  const color =
+    variant === "secondary" ||
+    variant === "subtitle"
+      ? theme.colors.textSecondary
+      : variant === "label" ||
+          variant === "caption"
+        ? theme.colors.muted
+        : variant === "xp"
+          ? theme.colors.xp
+          : theme.colors.text;
 
-      case "xp":
-        return theme.colors.xp;
+  // ==========================================================
+  // THEME TYPOGRAPHY
+  //
+  // nature   = Serena Coastal
+  // dungeon  = Doom Depths / Retro
+  // future   = Futuristic
+  // ==========================================================
 
-      default:
-        return theme.colors.text;
-    }
-  }
+  const themeTypography =
+    themeName === "dungeon"
+      ? getDungeonTypography(
+          variant
+        )
+      : themeName === "future"
+        ? getFutureTypography(
+            variant
+          )
+        : getNatureTypography(
+            variant
+          );
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <Text
-      numberOfLines={numberOfLines}
+      numberOfLines={
+        numberOfLines
+      }
       style={[
         styles.base,
         styles[variant],
+        themeTypography,
         {
-          color: getColor(),
+          color,
         },
         style,
       ]}
@@ -66,49 +107,237 @@ export default function AppText({
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    fontSize: 14,
-  },
+// ============================================================
+// NATURE / SERENA COASTAL TYPOGRAPHY
+// ============================================================
 
-  pageTitle: {
-    fontSize: 32,
-    fontWeight: "800",
-  },
+function getNatureTypography(
+  variant: Variant
+): TextStyle {
+  switch (variant) {
+    case "pageTitle":
+      return {
+        letterSpacing: -0.8,
+      };
 
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
+    case "title":
+      return {
+        letterSpacing: -0.25,
+      };
 
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+    case "label":
+      return {
+        letterSpacing: 1.5,
+      };
 
-  body: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+    default:
+      return {};
+  }
+}
 
-  secondary: {
-    fontSize: 13,
-    lineHeight: 19,
-  },
+// ============================================================
+// DOOM DEPTHS / RETRO TYPOGRAPHY
+// ============================================================
 
-  label: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.2,
-  },
+function getDungeonTypography(
+  variant: Variant
+): TextStyle {
+  const retroFont =
+    Platform.OS === "ios"
+      ? "Menlo"
+      : "monospace";
 
-  caption: {
-    fontSize: 11,
-    lineHeight: 16,
-  },
+  switch (variant) {
+    // --------------------------------------------------------
+    // PAGE TITLE
+    // --------------------------------------------------------
 
-  xp: {
-    fontSize: 14,
-    fontWeight: "800",
-  },
-});
+    case "pageTitle":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "900",
+        letterSpacing: 1.4,
+        textTransform: "uppercase",
+      };
+
+    // --------------------------------------------------------
+    // TITLE
+    // --------------------------------------------------------
+
+    case "title":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "900",
+        letterSpacing: 0.6,
+      };
+
+    // --------------------------------------------------------
+    // SUBTITLE
+    // --------------------------------------------------------
+
+    case "subtitle":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "600",
+        letterSpacing: 0.25,
+      };
+
+    // --------------------------------------------------------
+    // BODY
+    // --------------------------------------------------------
+
+    case "body":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "600",
+        letterSpacing: 0.15,
+      };
+
+    // --------------------------------------------------------
+    // SECONDARY
+    // --------------------------------------------------------
+
+    case "secondary":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "500",
+        letterSpacing: 0.15,
+      };
+
+    // --------------------------------------------------------
+    // LABEL
+    // --------------------------------------------------------
+
+    case "label":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "900",
+        letterSpacing: 2,
+        textTransform: "uppercase",
+      };
+
+    // --------------------------------------------------------
+    // CAPTION
+    // --------------------------------------------------------
+
+    case "caption":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "700",
+        letterSpacing: 0.5,
+      };
+
+    // --------------------------------------------------------
+    // XP / NUMBERS
+    // --------------------------------------------------------
+
+    case "xp":
+      return {
+        fontFamily: retroFont,
+        fontWeight: "900",
+        letterSpacing: 0.8,
+      };
+
+    default:
+      return {};
+  }
+}
+
+// ============================================================
+// FUTURISTIC TYPOGRAPHY
+// ============================================================
+
+function getFutureTypography(
+  variant: Variant
+): TextStyle {
+  switch (variant) {
+    case "pageTitle":
+      return {
+        letterSpacing: 0.4,
+      };
+
+    case "title":
+      return {
+        letterSpacing: 0.15,
+      };
+
+    case "label":
+      return {
+        letterSpacing: 2,
+        textTransform: "uppercase",
+      };
+
+    case "caption":
+      return {
+        letterSpacing: 0.35,
+      };
+
+    case "xp":
+      return {
+        letterSpacing: 0.45,
+      };
+
+    default:
+      return {};
+  }
+}
+
+// ============================================================
+// BASE TYPOGRAPHY
+// ============================================================
+
+const styles =
+  StyleSheet.create({
+    base: {
+      fontSize: 14,
+    },
+
+    pageTitle: {
+      fontSize: 34,
+      lineHeight: 40,
+      fontWeight: "900",
+    },
+
+    title: {
+      fontSize: 18,
+      lineHeight: 23,
+      fontWeight: "800",
+    },
+
+    subtitle: {
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "500",
+    },
+
+    body: {
+      fontSize: 14,
+      lineHeight: 20,
+      fontWeight: "500",
+    },
+
+    secondary: {
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: "500",
+    },
+
+    label: {
+      fontSize: 10,
+      lineHeight: 14,
+      fontWeight: "800",
+      textTransform: "uppercase",
+    },
+
+    caption: {
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight: "600",
+    },
+
+    xp: {
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: "900",
+    },
+  });

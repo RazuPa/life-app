@@ -11,10 +11,18 @@ import AppText from "../components/AppText";
 
 import { useTheme } from "../context/ThemeContext";
 
+// ============================================================
+// SCREEN
+// ============================================================
+
 export default function SettingsScreen() {
   const { theme } = useTheme();
 
-  function handleBack() {
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+
+  function back() {
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -22,70 +30,95 @@ export default function SettingsScreen() {
     }
   }
 
+  // ============================================================
+  // UI
+  // ============================================================
+
   return (
     <AppScreen>
+      {/* ========================================================
+          HEADER
+          ======================================================== */}
+
       <View style={styles.header}>
         <Pressable
-          onPress={handleBack}
-          hitSlop={10}
+          onPress={back}
           style={({ pressed }) => [
             styles.backButton,
             {
               backgroundColor:
                 theme.colors.card,
+
               borderColor:
                 theme.colors.border,
-              opacity: pressed ? 0.65 : 1,
+
+              opacity:
+                pressed ? 0.65 : 1,
             },
           ]}
         >
           <AppText
-            style={styles.backButtonText}
+            style={styles.backText}
           >
             ‹
           </AppText>
         </Pressable>
 
-        <AppText
-          variant="title"
-          style={styles.title}
-        >
-          Settings
-        </AppText>
+        <View style={styles.headerText}>
+          <AppText variant="pageTitle">
+            Settings
+          </AppText>
 
-        <View style={styles.headerSpacer} />
+          <AppText variant="caption">
+            Customize your Life App
+          </AppText>
+        </View>
       </View>
 
-      <AppText
-        variant="label"
-        style={styles.sectionLabel}
-      >
-        APPEARANCE
-      </AppText>
+      {/* ========================================================
+          APPEARANCE
+          ======================================================== */}
+
+      <View style={styles.section}>
+        <AppText variant="label">
+          APPEARANCE
+        </AppText>
+
+        <AppText
+          variant="caption"
+          style={styles.sectionDescription}
+        >
+          Change how your world
+          looks and feels.
+        </AppText>
+      </View>
 
       <AppCard
         onPress={() =>
           router.push("/theme")
         }
-        style={styles.settingCard}
+        style={styles.settingRow}
       >
         <View
           style={[
-            styles.settingIcon,
+            styles.iconBox,
             {
               backgroundColor:
                 theme.colors.cardAlt,
+
+              borderColor:
+                theme.colors.border,
             },
           ]}
         >
           <AppText
-            style={styles.settingEmoji}
+            style={styles.icon}
           >
             🎨
           </AppText>
         </View>
 
-        <View style={styles.settingContent}>
+        <View style={styles.flex}>
           <AppText
             variant="title"
             style={styles.settingTitle}
@@ -93,35 +126,86 @@ export default function SettingsScreen() {
             Theme
           </AppText>
 
-          <AppText variant="secondary">
-            {theme.icon}{" "}
-            {theme.displayName}
-          </AppText>
+          <View
+            style={
+              styles.currentTheme
+            }
+          >
+            <AppText
+              style={
+                styles.themeIcon
+              }
+            >
+              {theme.icon}
+            </AppText>
+
+            <AppText
+              variant="secondary"
+              style={
+                styles.themeName
+              }
+            >
+              {theme.displayName}
+            </AppText>
+          </View>
         </View>
 
-        <AppText
+        <View
           style={[
-            styles.chevron,
+            styles.arrowBox,
             {
-              color: theme.colors.muted,
+              backgroundColor:
+                theme.colors.cardAlt,
+
+              borderColor:
+                theme.colors.border,
             },
           ]}
         >
-          ›
-        </AppText>
+          <AppText
+            style={[
+              styles.arrow,
+              {
+                color:
+                  theme.colors.xp,
+              },
+            ]}
+          >
+            ›
+          </AppText>
+        </View>
       </AppCard>
 
-      <AppText
-        variant="label"
-        style={styles.accountLabel}
-      >
-        ACCOUNT
-      </AppText>
+      {/* ========================================================
+          GAME
+          ======================================================== */}
 
-      <AppCard style={styles.settingCard}>
+      <View style={styles.section}>
+        <AppText variant="label">
+          GAME
+        </AppText>
+
+        <AppText
+          variant="caption"
+          style={styles.sectionDescription}
+        >
+          Your progression and
+          companion settings.
+        </AppText>
+      </View>
+
+      <View
+        style={[
+          styles.infoRow,
+          {
+            borderColor:
+              theme.colors.border,
+          },
+        ]}
+      >
         <View
           style={[
-            styles.settingIcon,
+            styles.smallIconBox,
             {
               backgroundColor:
                 theme.colors.cardAlt,
@@ -129,122 +213,323 @@ export default function SettingsScreen() {
           ]}
         >
           <AppText
-            style={styles.settingEmoji}
+            style={
+              styles.smallIcon
+            }
           >
-            👤
+            🎮
           </AppText>
         </View>
 
-        <View style={styles.settingContent}>
-          <AppText
-            variant="title"
-            style={styles.settingTitle}
-          >
-            Account
+        <View style={styles.flex}>
+          <AppText variant="title">
+            Game progress
           </AppText>
 
-          <AppText variant="secondary">
-            Account settings coming later
+          <AppText
+            variant="caption"
+            style={styles.infoText}
+          >
+            Saved automatically
+            on this device
           </AppText>
         </View>
 
         <AppText
           style={[
-            styles.chevron,
+            styles.status,
             {
-              color: theme.colors.muted,
+              color:
+                theme.colors.xp,
             },
           ]}
         >
-          ›
+          ✓
         </AppText>
-      </AppCard>
+      </View>
 
-      <AppText
-        variant="caption"
-        style={styles.version}
+      {/* ========================================================
+          ABOUT
+          ======================================================== */}
+
+      <View style={styles.section}>
+        <AppText variant="label">
+          ABOUT
+        </AppText>
+      </View>
+
+      <View
+        style={[
+          styles.aboutBox,
+          {
+            borderColor:
+              theme.colors.border,
+          },
+        ]}
       >
-        Life App • Development Build
-      </AppText>
+        <View style={styles.aboutTop}>
+          <View>
+            <AppText
+              variant="title"
+              style={styles.appName}
+            >
+              Life App
+            </AppText>
+
+            <AppText variant="caption">
+              Turn real life into
+              progression.
+            </AppText>
+          </View>
+
+          <AppText
+            style={styles.appIcon}
+          >
+            ✦
+          </AppText>
+        </View>
+
+        <View
+          style={[
+            styles.aboutDivider,
+            {
+              backgroundColor:
+                theme.colors.border,
+            },
+          ]}
+        />
+
+        <View
+          style={styles.versionRow}
+        >
+          <AppText variant="caption">
+            VERSION
+          </AppText>
+
+          <AppText
+            variant="caption"
+            style={styles.versionValue}
+          >
+            V2 Development Build
+          </AppText>
+        </View>
+      </View>
     </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 36,
-  },
+// ============================================================
+// STYLES
+// ============================================================
 
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+const styles =
+  StyleSheet.create({
+    // ==========================================================
+    // HEADER
+    // ==========================================================
 
-  backButtonText: {
-    fontSize: 30,
-    lineHeight: 32,
-    marginTop: -3,
-  },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 26,
+    },
 
-  title: {
-    fontSize: 24,
-  },
+    backButton: {
+      width: 42,
+      height: 42,
 
-  headerSpacer: {
-    width: 42,
-  },
+      borderRadius: 13,
+      borderWidth: 1,
 
-  sectionLabel: {
-    marginBottom: 10,
-  },
+      justifyContent: "center",
+      alignItems: "center",
 
-  accountLabel: {
-    marginTop: 30,
-    marginBottom: 10,
-  },
+      marginRight: 13,
+    },
 
-  settingCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-  },
+    backText: {
+      fontSize: 30,
+      lineHeight: 32,
+      marginTop: -3,
+    },
 
-  settingIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
+    headerText: {
+      flex: 1,
+    },
 
-  settingEmoji: {
-    fontSize: 23,
-  },
+    // ==========================================================
+    // SECTIONS
+    // ==========================================================
 
-  settingContent: {
-    flex: 1,
-  },
+    section: {
+      marginTop: 20,
+      marginBottom: 9,
+    },
 
-  settingTitle: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
+    sectionDescription: {
+      marginTop: 2,
+    },
 
-  chevron: {
-    fontSize: 26,
-    marginLeft: 10,
-  },
+    // ==========================================================
+    // THEME
+    // ==========================================================
 
-  version: {
-    textAlign: "center",
-    marginTop: 50,
-  },
-});
+    settingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: 13,
+    },
+
+    iconBox: {
+      width: 44,
+      height: 44,
+
+      borderRadius: 12,
+      borderWidth: 1,
+
+      justifyContent: "center",
+      alignItems: "center",
+
+      marginRight: 12,
+    },
+
+    icon: {
+      fontSize: 22,
+    },
+
+    settingTitle: {
+      fontSize: 15,
+      lineHeight: 19,
+    },
+
+    currentTheme: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 2,
+    },
+
+    themeIcon: {
+      fontSize: 12,
+      marginRight: 5,
+    },
+
+    themeName: {
+      fontSize: 11,
+    },
+
+    arrowBox: {
+      width: 30,
+      height: 30,
+
+      borderRadius: 9,
+      borderWidth: 1,
+
+      alignItems: "center",
+      justifyContent: "center",
+
+      marginLeft: 10,
+    },
+
+    arrow: {
+      fontSize: 22,
+      lineHeight: 24,
+      marginTop: -2,
+    },
+
+    // ==========================================================
+    // GAME
+    // ==========================================================
+
+    infoRow: {
+      minHeight: 58,
+
+      borderTopWidth:
+        StyleSheet.hairlineWidth,
+
+      borderBottomWidth:
+        StyleSheet.hairlineWidth,
+
+      flexDirection: "row",
+      alignItems: "center",
+
+      paddingVertical: 9,
+    },
+
+    smallIconBox: {
+      width: 38,
+      height: 38,
+
+      borderRadius: 10,
+
+      alignItems: "center",
+      justifyContent: "center",
+
+      marginRight: 11,
+    },
+
+    smallIcon: {
+      fontSize: 19,
+    },
+
+    infoText: {
+      marginTop: 2,
+    },
+
+    status: {
+      fontSize: 16,
+      fontWeight: "900",
+      marginLeft: 10,
+    },
+
+    // ==========================================================
+    // ABOUT
+    // ==========================================================
+
+    aboutBox: {
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 14,
+    },
+
+    aboutTop: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+    },
+
+    appName: {
+      fontSize: 16,
+      lineHeight: 20,
+    },
+
+    appIcon: {
+      fontSize: 22,
+    },
+
+    aboutDivider: {
+      height:
+        StyleSheet.hairlineWidth,
+
+      marginVertical: 12,
+    },
+
+    versionRow: {
+      flexDirection: "row",
+      justifyContent:
+        "space-between",
+      alignItems: "center",
+    },
+
+    versionValue: {
+      fontWeight: "700",
+    },
+
+    // ==========================================================
+    // SHARED
+    // ==========================================================
+
+    flex: {
+      flex: 1,
+    },
+  });

@@ -1,20 +1,42 @@
-import { router } from "expo-router";
+import {
+  useCallback,
+  useRef,
+} from "react";
 
-import { StyleSheet, View } from "react-native";
+import {
+  router,
+  useFocusEffect,
+} from "expo-router";
+
+import {
+  Animated,
+  StyleSheet,
+  View,
+} from "react-native";
 
 import AppCard from "../../components/AppCard";
 import AppScreen from "../../components/AppScreen";
 import AppText from "../../components/AppText";
 
-import { useTheme } from "../../context/ThemeContext";
+import {
+  useTheme,
+} from "../../context/ThemeContext";
+
+// ============================================================
+// TYPES
+// ============================================================
 
 type ActivityOption = {
   id: string;
   title: string;
   description: string;
   icon: string;
-  route?: "/running";
+  route: string;
 };
+
+// ============================================================
+// QUICK ACTIVITIES
+// ============================================================
 
 const activities: ActivityOption[] = [
   {
@@ -22,355 +44,1037 @@ const activities: ActivityOption[] = [
     title: "Running",
     description: "Distance & time",
     icon: "🏃",
-    route: "/running",
+    route: "/activity?type=running",
   },
-  {
-    id: "reading",
-    title: "Reading",
-    description: "Pages & time",
-    icon: "📚",
-  },
-  {
-    id: "gym",
-    title: "Gym",
-    description: "Workout & time",
-    icon: "🏋️",
-  },
-  {
-    id: "coding",
-    title: "Coding",
-    description: "Projects & time",
-    icon: "💻",
-  },
-  {
-    id: "studying",
-    title: "Studying",
-    description: "Subject & time",
-    icon: "🧠",
-  },
+
   {
     id: "walking",
     title: "Walking",
     description: "Distance & time",
     icon: "🚶",
+    route: "/activity?type=walking",
+  },
+
+  {
+    id: "reading",
+    title: "Reading",
+    description: "Pages & time",
+    icon: "📚",
+    route: "/activity?type=reading",
+  },
+
+  {
+    id: "gym",
+    title: "Gym",
+    description: "Sessions & time",
+    icon: "🏋️",
+    route: "/activity?type=gym",
+  },
+
+  {
+    id: "coding",
+    title: "Coding",
+    description: "Time",
+    icon: "💻",
+    route: "/activity?type=coding",
+  },
+
+  {
+    id: "studying",
+    title: "Studying",
+    description: "Time",
+    icon: "🧠",
+    route: "/activity?type=studying",
   },
 ];
 
-export default function AddScreen() {
-  const { theme } = useTheme();
+// ============================================================
+// SCREEN
+// ============================================================
 
-  function handleActivityPress(activity: ActivityOption) {
-    if (activity.route) {
-      router.push(activity.route);
-    }
+export default function AddScreen() {
+  const {
+    theme,
+    themeName,
+  } = useTheme();
+
+  // ==========================================================
+  // THEME
+  // ==========================================================
+
+  const isNature =
+    themeName === "nature";
+
+  const isDungeon =
+    themeName === "dungeon";
+
+  const isFuture =
+    themeName === "future";
+
+  // ==========================================================
+  // ANIMATION VALUES
+  // ==========================================================
+
+  const headerAnim =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const infoAnim =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const sectionAnim =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  const cardAnimations =
+    useRef(
+      Array.from(
+        {
+          length:
+            activities.length + 1,
+        },
+        () =>
+          new Animated.Value(0)
+      )
+    ).current;
+
+  const examplesAnim =
+    useRef(
+      new Animated.Value(0)
+    ).current;
+
+  // ==========================================================
+  // ANIMATION STYLE
+  // ==========================================================
+
+  const entranceDistance =
+    isDungeon
+      ? 9
+      : isFuture
+        ? 18
+        : 14;
+
+  function entranceStyle(
+    value: Animated.Value
+  ) {
+    return {
+      opacity: value,
+
+      transform: [
+        {
+          translateY:
+            value.interpolate({
+              inputRange: [0, 1],
+              outputRange: [
+                entranceDistance,
+                0,
+              ],
+            }),
+        },
+
+        {
+          scale:
+            value.interpolate({
+              inputRange: [0, 1],
+
+              outputRange:
+                isDungeon
+                  ? [0.995, 1]
+                  : isFuture
+                    ? [0.97, 1]
+                    : [0.985, 1],
+            }),
+        },
+      ],
+    };
   }
+
+  // ==========================================================
+  // RUN ANIMATION WHEN SCREEN RECEIVES FOCUS
+  // ==========================================================
+
+  useFocusEffect(
+    useCallback(() => {
+      const allValues = [
+        headerAnim,
+        infoAnim,
+        sectionAnim,
+        ...cardAnimations,
+        examplesAnim,
+      ];
+
+      allValues.forEach(
+        (value) => {
+          value.stopAnimation();
+          value.setValue(0);
+        }
+      );
+
+      const duration =
+        isDungeon
+          ? 150
+          : isFuture
+            ? 220
+            : 260;
+
+      const createAnimation = (
+        value: Animated.Value
+      ) =>
+        Animated.timing(
+          value,
+          {
+            toValue: 1,
+            duration,
+            useNativeDriver: true,
+          }
+        );
+
+      const animation =
+        Animated.sequence([
+          createAnimation(
+            headerAnim
+          ),
+
+          Animated.stagger(
+            isDungeon
+              ? 30
+              : 45,
+            [
+              createAnimation(
+                infoAnim
+              ),
+
+              createAnimation(
+                sectionAnim
+              ),
+            ]
+          ),
+
+          Animated.stagger(
+            isDungeon
+              ? 28
+              : isFuture
+                ? 45
+                : 55,
+
+            cardAnimations.map(
+              createAnimation
+            )
+          ),
+
+          createAnimation(
+            examplesAnim
+          ),
+        ]);
+
+      animation.start();
+
+      return () => {
+        animation.stop();
+      };
+    }, [
+      headerAnim,
+      infoAnim,
+      sectionAnim,
+      cardAnimations,
+      examplesAnim,
+      isDungeon,
+      isFuture,
+    ])
+  );
+
+  // ==========================================================
+  // THEME TEXT
+  // ==========================================================
+
+  const pageTitle =
+    isDungeon
+      ? "ADD ACTIVITY"
+      : isFuture
+        ? "ACTIVITY INPUT"
+        : "Add Activity";
+
+  const pageSubtitle =
+    isDungeon
+      ? "What did you accomplish?"
+      : isFuture
+        ? "Select activity protocol."
+        : "What did you do?";
+
+  const infoTitle =
+    isDungeon
+      ? "Every action matters"
+      : isFuture
+        ? "ACTIVITY DATA ACCEPTED"
+        : "Everything counts";
+
+  const infoDescription =
+    isDungeon
+      ? "Train your real-life skills and earn experience."
+      : isFuture
+        ? "Convert real-world activity data into XP."
+        : "Track real-life progress and turn it into XP.";
+
+  const sectionTitle =
+    isDungeon
+      ? "QUICK ACTIONS"
+      : isFuture
+        ? "ACTIVITY MODULES"
+        : "QUICK ACTIVITIES";
+
+  const sectionSubtitle =
+    isDungeon
+      ? "Choose your next action"
+      : isFuture
+        ? "Select active tracking module"
+        : "Choose something you do often";
+
+  // ==========================================================
+  // RENDER
+  // ==========================================================
 
   return (
     <AppScreen>
-      <View style={styles.header}>
-        <View style={styles.headerText}>
-          <AppText variant="pageTitle">Add Activity</AppText>
+      {/* ======================================================
+          HEADER
+      ====================================================== */}
 
-          <AppText variant="secondary">What did you do?</AppText>
-        </View>
+      <Animated.View
+        style={[
+          styles.header,
 
-        <AppCard variant="alt" padding={0} style={styles.headerIcon}>
-          <AppText style={styles.headerEmoji}>⚡</AppText>
-        </AppCard>
-      </View>
+          entranceStyle(
+            headerAnim
+          ),
+        ]}
+      >
+        <View style={styles.flex}>
+          <AppText
+            variant="pageTitle"
+            style={[
+              isDungeon &&
+                styles.dungeonTitle,
 
-      <AppCard variant="alt" style={styles.xpInfoCard}>
-        <AppText style={styles.xpInfoEmoji}>✨</AppText>
-
-        <View style={styles.xpInfoContent}>
-          <AppText variant="title" style={styles.xpInfoTitle}>
-            Everything counts
+              isFuture &&
+                styles.futureTitle,
+            ]}
+          >
+            {pageTitle}
           </AppText>
 
           <AppText variant="secondary">
-            Track the things you do in real life and turn your progress into XP.
+            {pageSubtitle}
           </AppText>
         </View>
-      </AppCard>
 
-      <AppText variant="label" style={styles.sectionLabel}>
-        POPULAR ACTIVITIES
-      </AppText>
-
-      <View style={styles.activityGrid}>
-        {activities.map((activity) => {
-          const isAvailable = activity.route !== undefined;
-
-          return (
-            <AppCard
-              key={activity.id}
-              padding={16}
-              disabled={!isAvailable}
-              onPress={
-                isAvailable ? () => handleActivityPress(activity) : undefined
-              }
-              style={[
-                styles.activityCard,
-                {
-                  borderColor: isAvailable
-                    ? theme.colors.primary
-                    : theme.colors.border,
-                },
-                !isAvailable && styles.unavailableCard,
-              ]}
-            >
-              <View
-                style={[
-                  styles.activityIconContainer,
-                  {
-                    backgroundColor: theme.colors.cardAlt,
-                  },
-                ]}
-              >
-                <AppText style={styles.activityIcon}>{activity.icon}</AppText>
-              </View>
-
-              <AppText variant="title" style={styles.activityTitle}>
-                {activity.title}
-              </AppText>
-
-              <AppText variant="caption" style={styles.activityDescription}>
-                {activity.description}
-              </AppText>
-
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: theme.colors.cardAlt,
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    styles.badgeText,
-                    {
-                      color: isAvailable
-                        ? theme.colors.primary
-                        : theme.colors.muted,
-                    },
-                  ]}
-                >
-                  {isAvailable ? "READY" : "SOON"}
-                </AppText>
-              </View>
-            </AppCard>
-          );
-        })}
-      </View>
-
-      <AppText variant="label" style={styles.customSectionLabel}>
-        YOUR ACTIVITIES
-      </AppText>
-
-      <AppCard style={styles.customCard}>
-        <View
+        <AppCard
+          variant="alt"
+          padding={0}
           style={[
-            styles.customIconContainer,
-            {
-              backgroundColor: theme.colors.cardAlt,
-            },
-          ]}
-        >
-          <AppText style={styles.customIcon}>＋</AppText>
-        </View>
+            styles.headerIcon,
 
-        <View style={styles.customContent}>
-          <AppText variant="title" style={styles.customTitle}>
-            Create custom activity
-          </AppText>
+            isDungeon &&
+              styles.dungeonHeaderIcon,
 
-          <AppText variant="caption">
-            Track anything that matters to you
-          </AppText>
-        </View>
-
-        <View
-          style={[
-            styles.badge,
-            styles.customBadge,
-            {
-              backgroundColor: theme.colors.cardAlt,
-            },
+            isFuture &&
+              styles.futureHeaderIcon,
           ]}
         >
           <AppText
             style={[
-              styles.badgeText,
-              {
-                color: theme.colors.muted,
+              styles.headerEmoji,
+
+              isFuture && {
+                color:
+                  theme.colors.primary,
               },
             ]}
           >
-            SOON
+            {isDungeon
+              ? "⚔️"
+              : isFuture
+                ? "◈"
+                : "⚡"}
+          </AppText>
+        </AppCard>
+      </Animated.View>
+
+      {/* ======================================================
+          INFO
+      ====================================================== */}
+
+      <Animated.View
+        style={entranceStyle(
+          infoAnim
+        )}
+      >
+        <AppCard
+          variant="alt"
+          style={[
+            styles.info,
+
+            isDungeon &&
+              styles.dungeonCard,
+
+            isFuture &&
+              styles.futureCard,
+          ]}
+        >
+          <AppText
+            style={[
+              styles.infoEmoji,
+
+              isFuture && {
+                color:
+                  theme.colors.primary,
+              },
+            ]}
+          >
+            {isDungeon
+              ? "◆"
+              : isFuture
+                ? "◈"
+                : "✨"}
+          </AppText>
+
+          <View style={styles.flex}>
+            <AppText
+              variant="title"
+              style={
+                styles.infoTitle
+              }
+            >
+              {infoTitle}
+            </AppText>
+
+            <AppText
+              variant="secondary"
+            >
+              {infoDescription}
+            </AppText>
+          </View>
+        </AppCard>
+      </Animated.View>
+
+      {/* ======================================================
+          QUICK ACTIVITIES HEADER
+      ====================================================== */}
+
+      <Animated.View
+        style={[
+          styles.sectionHeader,
+
+          entranceStyle(
+            sectionAnim
+          ),
+        ]}
+      >
+        <View>
+          <AppText
+            variant="label"
+            style={[
+              isFuture && {
+                color:
+                  theme.colors.primary,
+
+                letterSpacing: 1.2,
+              },
+            ]}
+          >
+            {sectionTitle}
+          </AppText>
+
+          <AppText
+            variant="caption"
+            style={
+              styles.sectionSubtitle
+            }
+          >
+            {sectionSubtitle}
           </AppText>
         </View>
-      </AppCard>
+      </Animated.View>
+
+      {/* ======================================================
+          ACTIVITY GRID
+      ====================================================== */}
+
+      <View style={styles.grid}>
+        {activities.map(
+          (
+            activity,
+            index
+          ) => (
+            <Animated.View
+              key={
+                activity.id
+              }
+              style={[
+                styles.activityWrapper,
+
+                entranceStyle(
+                  cardAnimations[
+                    index
+                  ]
+                ),
+              ]}
+            >
+              <AppCard
+                onPress={() =>
+                  router.push(
+                    activity.route as never
+                  )
+                }
+                style={[
+                  styles.activity,
+
+                  {
+                    borderColor:
+                      isFuture
+                        ? theme.colors
+                            .primary
+                        : theme.colors
+                            .primary,
+                  },
+
+                  isDungeon &&
+                    styles.dungeonActivity,
+
+                  isFuture &&
+                    styles.futureActivity,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconBox,
+
+                    {
+                      backgroundColor:
+                        theme.colors
+                          .cardAlt,
+
+                      borderColor:
+                        isFuture
+                          ? theme.colors
+                              .primary
+                          : theme.colors
+                              .border,
+                    },
+
+                    isDungeon &&
+                      styles.dungeonIconBox,
+
+                    isFuture &&
+                      styles.futureIconBox,
+                  ]}
+                >
+                  <AppText
+                    style={
+                      styles.icon
+                    }
+                  >
+                    {
+                      activity.icon
+                    }
+                  </AppText>
+                </View>
+
+                <AppText
+                  variant="title"
+                  style={
+                    styles.activityTitle
+                  }
+                >
+                  {activity.title}
+                </AppText>
+
+                <AppText
+                  variant="caption"
+                >
+                  {
+                    activity.description
+                  }
+                </AppText>
+
+                <View
+                  style={[
+                    styles.badge,
+
+                    {
+                      backgroundColor:
+                        theme.colors
+                          .cardAlt,
+
+                      borderColor:
+                        isFuture
+                          ? theme.colors
+                              .primary
+                          : "transparent",
+                    },
+
+                    isFuture &&
+                      styles.futureBadge,
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      styles.badgeText,
+
+                      {
+                        color:
+                          theme.colors
+                            .primary,
+                      },
+                    ]}
+                  >
+                    {isDungeon
+                      ? "READY"
+                      : isFuture
+                        ? "ONLINE"
+                        : "READY"}
+                  </AppText>
+                </View>
+              </AppCard>
+            </Animated.View>
+          )
+        )}
+
+        {/* ====================================================
+            OTHER ACTIVITY
+        ==================================================== */}
+
+        <Animated.View
+          style={[
+            styles.activityWrapper,
+
+            entranceStyle(
+              cardAnimations[
+                activities.length
+              ]
+            ),
+          ]}
+        >
+          <AppCard
+            onPress={() =>
+              router.push(
+                "/create-activity" as never
+              )
+            }
+            style={[
+              styles.activity,
+              styles.otherActivity,
+
+              {
+                borderColor:
+                  isFuture
+                    ? theme.colors
+                        .primary
+                    : theme.colors
+                        .border,
+              },
+
+              isDungeon &&
+                styles.dungeonActivity,
+
+              isFuture &&
+                styles.futureActivity,
+            ]}
+          >
+            <View
+              style={[
+                styles.iconBox,
+                styles.plusBox,
+
+                {
+                  backgroundColor:
+                    theme.colors
+                      .cardAlt,
+
+                  borderColor:
+                    theme.colors.xp,
+                },
+
+                isDungeon &&
+                  styles.dungeonIconBox,
+
+                isFuture &&
+                  styles.futureIconBox,
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.plus,
+
+                  {
+                    color:
+                      theme.colors.xp,
+                  },
+                ]}
+              >
+                +
+              </AppText>
+            </View>
+
+            <AppText
+              variant="title"
+              style={
+                styles.activityTitle
+              }
+            >
+              {isFuture
+                ? "Custom Module"
+                : "Other Activity"}
+            </AppText>
+
+            <AppText variant="caption">
+              {isFuture
+                ? "Create custom tracking data"
+                : "Track anything you do"}
+            </AppText>
+
+            <View
+              style={[
+                styles.badge,
+
+                {
+                  backgroundColor:
+                    theme.colors
+                      .cardAlt,
+
+                  borderColor:
+                    isFuture
+                      ? theme.colors
+                          .xp
+                      : "transparent",
+                },
+
+                isFuture &&
+                  styles.futureBadge,
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.badgeText,
+
+                  {
+                    color:
+                      theme.colors.xp,
+                  },
+                ]}
+              >
+                {isFuture
+                  ? "CREATE"
+                  : "CREATE"}
+              </AppText>
+            </View>
+          </AppCard>
+        </Animated.View>
+      </View>
+
+      {/* ======================================================
+          EXAMPLES
+      ====================================================== */}
+
+      <Animated.View
+        style={[
+          styles.examples,
+
+          {
+            borderTopColor:
+              theme.colors.border,
+          },
+
+          entranceStyle(
+            examplesAnim
+          ),
+        ]}
+      >
+        <AppText
+          variant="label"
+          style={[
+            isFuture && {
+              color:
+                theme.colors.primary,
+
+              letterSpacing: 1.2,
+            },
+          ]}
+        >
+          {isDungeon
+            ? "BUILD YOUR CHARACTER"
+            : isFuture
+              ? "EXPAND SYSTEM"
+              : "TRACK YOUR LIFE"}
+        </AppText>
+
+        <AppText
+          variant="caption"
+          style={
+            styles.examplesText
+          }
+        >
+          🐎 Horse riding · 🎸 Guitar · 🏊 Swimming · 🎨
+          Drawing · 🧘 Meditation · 🇯🇵 Japanese · and anything
+          else.
+        </AppText>
+      </Animated.View>
     </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+// ============================================================
+// STYLES
+// ============================================================
 
-    marginBottom: 24,
-  },
+const styles =
+  StyleSheet.create({
+    flex: {
+      flex: 1,
+      minWidth: 0,
+    },
 
-  headerText: {
-    flex: 1,
-  },
+    // ========================================================
+    // HEADER
+    // ========================================================
 
-  headerIcon: {
-    width: 48,
-    height: 48,
+    header: {
+      flexDirection: "row",
 
-    borderRadius: 16,
+      justifyContent:
+        "space-between",
 
-    justifyContent: "center",
-    alignItems: "center",
-  },
+      alignItems: "center",
 
-  headerEmoji: {
-    fontSize: 23,
-  },
+      marginBottom: 24,
+    },
 
-  xpInfoCard: {
-    flexDirection: "row",
-    alignItems: "center",
+    headerIcon: {
+      width: 48,
+      height: 48,
 
-    padding: 16,
+      borderRadius: 16,
 
-    marginBottom: 30,
-  },
+      justifyContent:
+        "center",
 
-  xpInfoEmoji: {
-    fontSize: 24,
+      alignItems: "center",
 
-    marginRight: 13,
-  },
+      marginLeft: 12,
+    },
 
-  xpInfoContent: {
-    flex: 1,
-  },
+    headerEmoji: {
+      fontSize: 23,
+    },
 
-  xpInfoTitle: {
-    fontSize: 14,
+    dungeonHeaderIcon: {
+      borderRadius: 3,
+      borderWidth: 2,
+    },
 
-    marginBottom: 3,
-  },
+    futureHeaderIcon: {
+      borderRadius: 8,
+      borderWidth: 1,
+    },
 
-  sectionLabel: {
-    marginBottom: 12,
-  },
+    dungeonTitle: {
+      fontFamily: "Menlo",
+      letterSpacing: 1.3,
+    },
 
-  activityGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    futureTitle: {
+      letterSpacing: 1,
+    },
 
-    rowGap: 12,
-  },
+    // ========================================================
+    // INFO
+    // ========================================================
 
-  activityCard: {
-    width: "48.5%",
-    minHeight: 178,
-  },
+    info: {
+      flexDirection: "row",
 
-  unavailableCard: {
-    opacity: 0.72,
-  },
+      alignItems: "center",
 
-  activityIconContainer: {
-    width: 50,
-    height: 50,
+      marginBottom: 26,
+    },
 
-    borderRadius: 16,
+    infoEmoji: {
+      fontSize: 24,
 
-    justifyContent: "center",
-    alignItems: "center",
+      marginRight: 13,
+    },
 
-    marginBottom: 15,
-  },
+    infoTitle: {
+      fontSize: 14,
 
-  activityIcon: {
-    fontSize: 25,
-  },
+      marginBottom: 3,
+    },
 
-  activityTitle: {
-    fontSize: 16,
-  },
+    dungeonCard: {
+      borderRadius: 3,
+      borderWidth: 2,
+    },
 
-  activityDescription: {
-    marginTop: 4,
-  },
+    futureCard: {
+      borderRadius: 8,
+      borderWidth: 1,
+    },
 
-  badge: {
-    alignSelf: "flex-start",
+    // ========================================================
+    // SECTION
+    // ========================================================
 
-    borderRadius: 8,
+    sectionHeader: {
+      marginBottom: 12,
+    },
 
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    sectionSubtitle: {
+      marginTop: 3,
+    },
 
-    marginTop: 13,
-  },
+    // ========================================================
+    // GRID
+    // ========================================================
 
-  badgeText: {
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 0.8,
-  },
+    grid: {
+      flexDirection: "row",
 
-  customSectionLabel: {
-    marginTop: 30,
-    marginBottom: 12,
-  },
+      flexWrap: "wrap",
 
-  customCard: {
-    flexDirection: "row",
-    alignItems: "center",
+      justifyContent:
+        "space-between",
 
-    padding: 16,
-  },
+      rowGap: 12,
+    },
 
-  customIconContainer: {
-    width: 50,
-    height: 50,
+    activityWrapper: {
+      width: "48.5%",
+    },
 
-    borderRadius: 16,
+    activity: {
+      width: "100%",
 
-    justifyContent: "center",
-    alignItems: "center",
+      minHeight: 178,
+    },
 
-    marginRight: 14,
-  },
+    activityTitle: {
+      fontSize: 16,
+    },
 
-  customIcon: {
-    fontSize: 28,
-    fontWeight: "400",
-  },
+    dungeonActivity: {
+      borderRadius: 3,
+      borderWidth: 2,
+    },
 
-  customContent: {
-    flex: 1,
+    futureActivity: {
+      borderRadius: 8,
+      borderWidth: 1,
+    },
 
-    paddingRight: 8,
-  },
+    // ========================================================
+    // ICON
+    // ========================================================
 
-  customTitle: {
-    fontSize: 15,
+    iconBox: {
+      width: 50,
+      height: 50,
 
-    marginBottom: 4,
-  },
+      borderRadius: 16,
 
-  customBadge: {
-    marginTop: 0,
-  },
-});
+      justifyContent:
+        "center",
+
+      alignItems: "center",
+
+      marginBottom: 15,
+
+      borderWidth: 0,
+    },
+
+    dungeonIconBox: {
+      borderRadius: 2,
+    },
+
+    futureIconBox: {
+      borderRadius: 7,
+      borderWidth: 1,
+    },
+
+    icon: {
+      fontSize: 25,
+    },
+
+    // ========================================================
+    // BADGE
+    // ========================================================
+
+    badge: {
+      alignSelf:
+        "flex-start",
+
+      borderRadius: 8,
+
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+
+      marginTop: 13,
+
+      borderWidth: 0,
+    },
+
+    futureBadge: {
+      borderRadius: 4,
+      borderWidth: 1,
+    },
+
+    badgeText: {
+      fontSize: 9,
+
+      fontWeight: "900",
+
+      letterSpacing: 0.4,
+    },
+
+    // ========================================================
+    // OTHER ACTIVITY
+    // ========================================================
+
+    otherActivity: {
+      borderStyle: "dashed",
+    },
+
+    plusBox: {
+      borderWidth: 1,
+    },
+
+    plus: {
+      fontSize: 30,
+      lineHeight: 32,
+
+      fontWeight: "500",
+    },
+
+    // ========================================================
+    // EXAMPLES
+    // ========================================================
+
+    examples: {
+      borderTopWidth:
+        StyleSheet.hairlineWidth,
+
+      marginTop: 24,
+
+      paddingTop: 16,
+
+      paddingBottom: 28,
+    },
+
+    examplesText: {
+      marginTop: 7,
+
+      lineHeight: 18,
+    },
+  });

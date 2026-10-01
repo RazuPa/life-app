@@ -1,13 +1,28 @@
-export type ThemeName = "nature" | "dark" | "game";
+/*
+ * LIFE APP THEMES
+ *
+ * Three visual worlds:
+ *
+ * Nature  = vibrant cozy forest
+ * Dungeon = dark fantasy RPG
+ * Future  = futuristic Life OS
+ */
+
+export type ThemeName =
+  | "nature"
+  | "dungeon"
+  | "future";
 
 export type AppTheme = {
   name: ThemeName;
+
   displayName: string;
   icon: string;
   description: string;
 
   colors: {
     background: string;
+
     card: string;
     cardAlt: string;
 
@@ -29,126 +44,210 @@ export type AppTheme = {
   };
 };
 
-export const themes: Record<ThemeName, AppTheme> = {
+// ============================================================
+// THEMES
+// ============================================================
+
+export const themes: Record<
+  ThemeName,
+  AppTheme
+> = {
+  // ==========================================================
+  // NATURE
+  //
+  // Cozy forest / adventure journal.
+  // Much more vibrant than the old Nature theme.
+  // ==========================================================
+
   nature: {
     name: "nature",
 
-    displayName: "Nature Mode",
+    displayName: "Pocket Forest",
 
     icon: "🌿",
 
-    description: "Light, fresh and natural",
+    description:
+      "A vibrant cozy forest adventure",
 
     colors: {
-      background: "#F4F8F2",
+      // Warm parchment-like forest background
+      background: "#F2EEDB",
 
-      card: "#FFFFFF",
+      // Warm cream cards
+      card: "#FFF9E8",
 
-      cardAlt: "#EAF3E8",
+      // Moss-tinted secondary cards
+      cardAlt: "#DCE7C8",
 
-      primary: "#55A66F",
+      // Strong forest green
+      primary: "#3F7D4A",
 
-      secondary: "#A8D5B5",
+      // Warm golden accent
+      secondary: "#D9A441",
 
-      text: "#173522",
+      // Deep forest text
+      text: "#243526",
 
-      textSecondary: "#53695A",
+      // Softer natural text
+      textSecondary: "#5E6E59",
 
-      muted: "#819087",
+      // Muted moss
+      muted: "#8A9682",
 
-      border: "#DCE8DA",
+      // Natural borders
+      border: "#C9D2B7",
 
-      xp: "#55A66F",
+      // Golden progression / XP
+      xp: "#D89B2B",
 
-      success: "#4E9B67",
+      // Positive green
+      success: "#4E9B59",
 
-      danger: "#D9534F",
+      // Warm red
+      danger: "#C9574F",
 
-      input: "#FFFFFF",
+      // Inputs
+      input: "#FFFDF4",
 
-      tabBar: "#FFFFFF",
+      // Navigation
+      tabBar: "#FFF9E8",
     },
   },
 
-  dark: {
-    name: "dark",
+  // ==========================================================
+  // DUNGEON
+  //
+  // Dark fantasy / DoomDepths-inspired atmosphere.
+  //
+  // Near-black stone backgrounds.
+  // Blood red progression.
+  // Bronze / ember secondary accents.
+  // ==========================================================
 
-    displayName: "Dark Mode",
+  dungeon: {
+    name: "dungeon",
 
-    icon: "🌙",
+    displayName: "Doom Depths",
 
-    description: "Clean, dark and minimal",
+    icon: "⚔️",
+
+    description:
+      "Dark fantasy forged in the depths",
 
     colors: {
-      background: "#0B0D12",
+      // Deep dungeon
+      background: "#090807",
 
-      card: "#171A22",
+      // Stone panels
+      card: "#171310",
 
-      cardAlt: "#24202F",
+      // Raised dungeon panels
+      cardAlt: "#241B16",
 
-      primary: "#8B5CF6",
+      // Blood / ember red
+      primary: "#C94A3D",
 
-      secondary: "#292D38",
+      // Bronze
+      secondary: "#A8793B",
 
-      text: "#FFFFFF",
+      // Bone white
+      text: "#F1E6D2",
 
-      textSecondary: "#A7ADBB",
+      // Weathered parchment
+      textSecondary: "#B9A995",
 
-      muted: "#777E90",
+      // Dark stone metadata
+      muted: "#756A60",
 
-      border: "#2B303C",
+      // Stone borders
+      border: "#3A2C24",
 
-      xp: "#A78BFA",
+      // XP / progression
+      xp: "#E0A447",
 
-      success: "#58C780",
+      // Healing / completion
+      success: "#739B62",
 
-      danger: "#EF4444",
+      // Damage
+      danger: "#D43F3F",
 
-      input: "#171A22",
+      // Inputs
+      input: "#14110F",
 
-      tabBar: "#171A22",
+      // Navigation
+      tabBar: "#110E0C",
     },
   },
 
-  game: {
-    name: "game",
+  // ==========================================================
+  // FUTURE
+  //
+  // Futuristic operating-system / cyber interface.
+  //
+  // Navy-black background.
+  // Electric cyan.
+  // Violet secondary accent.
+  // ==========================================================
 
-    displayName: "Game Mode",
+  future: {
+    name: "future",
 
-    icon: "🎮",
+    displayName: "Future OS",
 
-    description: "RPG-inspired experience",
+    icon: "🚀",
+
+    description:
+      "A futuristic interface for your life",
 
     colors: {
-      background: "#100B1C",
+      // Deep space navy
+      background: "#050A12",
 
-      card: "#211733",
+      // Main glass-like panels
+      card: "#0C1522",
 
-      cardAlt: "#291D3D",
+      // Raised panels
+      cardAlt: "#122235",
 
-      primary: "#9B5DE5",
+      // Electric cyan
+      primary: "#38D9FF",
 
-      secondary: "#5B3C88",
+      // Neon violet
+      secondary: "#8A6CFF",
 
-      text: "#FFF8FF",
+      // Cold white
+      text: "#ECF8FF",
 
-      textSecondary: "#C9BDD3",
+      // Blue-grey
+      textSecondary: "#91AABD",
 
-      muted: "#A99BB8",
+      // Quiet metadata
+      muted: "#536B7C",
 
-      border: "#3A2952",
+      // Tech borders
+      border: "#19364A",
 
-      xp: "#F2C94C",
+      // XP / energy
+      xp: "#38D9FF",
 
-      success: "#7ED957",
+      // System success
+      success: "#42E6A4",
 
-      danger: "#FF5C77",
+      // Alert
+      danger: "#FF5576",
 
-      input: "#211733",
+      // Inputs
+      input: "#09131F",
 
-      tabBar: "#181024",
+      // Navigation
+      tabBar: "#07101A",
     },
   },
 };
 
-export const defaultTheme: ThemeName = "dark";
+// ============================================================
+// DEFAULT
+// ============================================================
+
+export const defaultTheme: ThemeName =
+  "nature";

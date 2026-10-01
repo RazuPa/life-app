@@ -1,576 +1,1153 @@
 import { router } from "expo-router";
-import { useRef, useState } from "react";
-
+import { useMemo, useState } from "react";
 import {
-    Animated,
-    Easing,
-    Keyboard,
-    Modal,
-    Pressable,
-    StyleSheet,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  View,
 } from "react-native";
 
+import AnimatedXPBar from "../components/AnimatedXPBar";
 import AppButton from "../components/AppButton";
 import AppCard from "../components/AppCard";
 import AppInput from "../components/AppInput";
 import AppScreen from "../components/AppScreen";
 import AppText from "../components/AppText";
+import ProgressBar from "../components/ProgressBar";
 
 import { useApp } from "../context/AppContext";
 import { useTheme } from "../context/ThemeContext";
 
+import {
+  didLevelUp,
+  getProgression,
+} from "../utils/progression";
+
+// ============================================================
+// REWARD RESULT
+// ============================================================
+
+type RewardResult = {
+  earnedXP: number;
+
+  activityXPBefore: number;
+  activityXPAfter: number;
+
+  activityLevelBefore: number;
+  activityLevelAfter: number;
+
+  activityLeveledUp: boolean;
+
+  playerXPBefore: number;
+  playerXPAfter: number;
+
+  playerLevelBefore: number;
+  playerLevelAfter: number;
+
+  playerLeveledUp: boolean;
+};
+
+// ============================================================
+// SCREEN
+// ============================================================
+
 export default function RunningScreen() {
-  const { addRun, level, xpInCurrentLevel, xpNeededForNextLevel } = useApp();
+  const {
+    activities,
+    addRun,
+    totalXP,
+  } = useApp();
 
   const { theme } = useTheme();
 
-  const [distance, setDistance] = useState("");
-  const [time, setTime] = useState("");
-  const [note, setNote] = useState("");
+  const [distance, setDistance] =
+    useState("");
 
-  const [showReward, setShowReward] = useState(false);
+  const [time, setTime] =
+    useState("");
 
-  const [earnedXP, setEarnedXP] = useState(0);
+  const [note, setNote] =
+    useState("");
 
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] =
+    useState(false);
 
-  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const [
+    rewardResult,
+    setRewardResult,
+  ] =
+    useState<RewardResult | null>(
+      null
+    );
 
-  const cardScale = useRef(new Animated.Value(0.85)).current;
+  // ============================================================
+  // INPUT VALUES
+  // ============================================================
 
-  const xpScale = useRef(new Animated.Value(0.5)).current;
+  const d =
+    Number(
+      distance.replace(",", ".")
+    ) || 0;
 
-  const progressAnimation = useRef(new Animated.Value(0)).current;
+  const t =
+    Number(
+      time.replace(",", ".")
+    ) || 0;
 
-  const distanceNumber = parseFloat(distance.replace(",", ".")) || 0;
+  // Running XP:
+  //
+  // distance * 10
+  // +
+  // time * 0.5
 
-  const timeNumber = parseInt(time, 10) || 0;
+  const xp = useMemo(
+    () =>
+      Math.max(
+        0,
+        Math.round(
+          d * 10 +
+            t * 0.5
+        )
+      ),
+    [d, t]
+  );
 
-  const calculatedXP =
-    Math.round(distanceNumber * 10) + Math.floor(timeNumber / 5);
+  // ============================================================
+  // CURRENT RUNNING XP
+  //
+  // Running's lifetime XP is calculated from permanent history.
+  // ============================================================
 
-  const xpAfterRun = xpInCurrentLevel + earnedXP;
+  const currentRunningXP =
+    useMemo(() => {
+      return activities
+        .filter(
+          (activity) =>
+            activity.title
+              .trim()
+              .toLowerCase() ===
+            "running"
+        )
+        .reduce(
+          (
+            sum,
+            activity
+          ) =>
+            sum +
+            activity.xp,
+          0
+        );
+    }, [activities]);
 
-  const levelsGained = Math.floor(xpAfterRun / xpNeededForNextLevel);
+  // Shared progression engine.
+  const currentRunningProgression =
+    getProgression(
+      currentRunningXP
+    );
 
-  const rewardLevel = level + levelsGained;
+  // ============================================================
+  // SAVE RUN
+  // ============================================================
 
-  const rewardLevelXP = xpAfterRun % xpNeededForNextLevel;
-
-  const rewardXPRemaining =
-    rewardLevelXP === 0 && xpAfterRun > 0
-      ? xpNeededForNextLevel
-      : xpNeededForNextLevel - rewardLevelXP;
-
-  const progressWidth = progressAnimation.interpolate({
-    inputRange: [0, xpNeededForNextLevel],
-
-    outputRange: ["0%", "100%"],
-
-    extrapolate: "clamp",
-  });
-
-  function completeRun() {
-    Keyboard.dismiss();
-
-    if (distanceNumber <= 0 && timeNumber <= 0) {
-      return;
-    }
-
-    if (showReward) {
-      return;
-    }
-
-    setEarnedXP(calculatedXP);
-    setShowReward(true);
-
-    overlayOpacity.setValue(0);
-    cardScale.setValue(0.85);
-    xpScale.setValue(0.5);
-
-    progressAnimation.setValue(xpInCurrentLevel);
-
-    const finalProgress =
-      (xpInCurrentLevel + calculatedXP) % xpNeededForNextLevel;
-
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(overlayOpacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-
-        Animated.spring(cardScale, {
-          toValue: 1,
-          friction: 6,
-          tension: 80,
-          useNativeDriver: true,
-        }),
-      ]),
-
-      Animated.spring(xpScale, {
-        toValue: 1,
-        friction: 4,
-        tension: 100,
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(progressAnimation, {
-        toValue: finalProgress,
-        duration: 1200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }
-
-  function continueToHome() {
+  function save() {
     if (isSaving) {
+      return;
+    }
+
+    if (
+      d <= 0 ||
+      t <= 0
+    ) {
+      Alert.alert(
+        "Missing information",
+        "Enter both distance and time."
+      );
+
       return;
     }
 
     setIsSaving(true);
 
+    const finalXP =
+      Math.max(
+        1,
+        xp
+      );
+
+    // ==========================================================
+    // RUNNING PROGRESSION
+    // ==========================================================
+
+    const activityXPBefore =
+      currentRunningXP;
+
+    const activityXPAfter =
+      activityXPBefore +
+      finalXP;
+
+    const activityBefore =
+      getProgression(
+        activityXPBefore
+      );
+
+    const activityAfter =
+      getProgression(
+        activityXPAfter
+      );
+
+    const activityLeveledUp =
+      didLevelUp(
+        activityXPBefore,
+        activityXPAfter
+      );
+
+    // ==========================================================
+    // PLAYER PROGRESSION
+    // ==========================================================
+
+    const playerXPBefore =
+      totalXP;
+
+    const playerXPAfter =
+      playerXPBefore +
+      finalXP;
+
+    const playerBefore =
+      getProgression(
+        playerXPBefore
+      );
+
+    const playerAfter =
+      getProgression(
+        playerXPAfter
+      );
+
+    const playerLeveledUp =
+      didLevelUp(
+        playerXPBefore,
+        playerXPAfter
+      );
+
+    // ==========================================================
+    // SAVE PERMANENT RUN
+    // ==========================================================
+
     addRun({
-      distance: distanceNumber,
-      time: timeNumber,
-      note,
-      xp: earnedXP,
+      distance: d,
+      time: t,
+      note:
+        note.trim(),
+      xp:
+        finalXP,
     });
 
-    setShowReward(false);
+    // ==========================================================
+    // OPEN REWARD SCREEN
+    // ==========================================================
 
-    router.replace("/");
+    setRewardResult({
+      earnedXP:
+        finalXP,
+
+      activityXPBefore,
+      activityXPAfter,
+
+      activityLevelBefore:
+        activityBefore.level,
+
+      activityLevelAfter:
+        activityAfter.level,
+
+      activityLeveledUp,
+
+      playerXPBefore,
+      playerXPAfter,
+
+      playerLevelBefore:
+        playerBefore.level,
+
+      playerLevelAfter:
+        playerAfter.level,
+
+      playerLeveledUp,
+    });
+
+    setIsSaving(false);
   }
 
-  return (
-    <>
+  // ============================================================
+  // REWARD SCREEN
+  // ============================================================
+
+  if (rewardResult) {
+    return (
       <AppScreen>
-        <Pressable
-          style={styles.backButton}
-          onPress={() => {
-            Keyboard.dismiss();
-            router.back();
-          }}
+        <View
+          style={
+            styles.rewardScreen
+          }
         >
-          <AppText
-            style={{
-              color: theme.colors.primary,
-              fontSize: 16,
-              fontWeight: "700",
-            }}
+          {/* ====================================================
+              RUNNING ICON
+              ==================================================== */}
+
+          <View
+            style={[
+              styles.bigIcon,
+              {
+                backgroundColor:
+                  theme.colors
+                    .cardAlt,
+
+                borderColor:
+                  rewardResult
+                    .activityLeveledUp
+                    ? theme.colors
+                        .xp
+                    : theme.colors
+                        .border,
+              },
+            ]}
           >
-            ‹ Back
-          </AppText>
-        </Pressable>
-
-        <View style={styles.header}>
-          <AppCard variant="alt" padding={0} style={styles.iconContainer}>
-            <AppText style={styles.icon}>🏃</AppText>
-          </AppCard>
-
-          <View style={styles.headerText}>
-            <AppText variant="pageTitle">Running</AppText>
-
-            <AppText variant="secondary">Track your run</AppText>
-          </View>
-        </View>
-
-        <View style={styles.inputSection}>
-          <AppInput
-            label="DISTANCE"
-            value={distance}
-            onChangeText={setDistance}
-            placeholder="0.0"
-            keyboardType="decimal-pad"
-            unit="km"
-          />
-
-          <AppInput
-            label="TIME"
-            value={time}
-            onChangeText={setTime}
-            placeholder="0"
-            keyboardType="number-pad"
-            unit="minutes"
-          />
-
-          <AppInput
-            label="NOTE"
-            value={note}
-            onChangeText={setNote}
-            placeholder="How did the run go?"
-            multiline
-            maxLength={200}
-          />
-        </View>
-
-        <AppCard style={styles.xpCard}>
-          <View>
-            <AppText variant="label">ESTIMATED REWARD</AppText>
-
-            <AppText variant="title" style={styles.xpTitle}>
-              Running XP
+            <AppText
+              style={
+                styles.bigEmoji
+              }
+            >
+              🏃
             </AppText>
           </View>
 
-          <AppText variant="xp" style={styles.xpAmount}>
-            +{calculatedXP} XP
-          </AppText>
-        </AppCard>
+          {/* ====================================================
+              XP REWARD
+              ==================================================== */}
 
-        <AppButton
-          title="Complete Run"
-          onPress={completeRun}
-          disabled={distanceNumber <= 0 && timeNumber <= 0}
-          style={styles.completeButton}
-        />
-      </AppScreen>
-
-      <Modal
-        visible={showReward}
-        transparent
-        animationType="none"
-        onRequestClose={() => {}}
-      >
-        <Animated.View
-          style={[
-            styles.modalBackground,
+          <AppText
+            variant="xp"
+            style={
+              styles.bigXP
+            }
+          >
+            +
             {
-              opacity: overlayOpacity,
-            },
-          ]}
-        >
-          <Animated.View
-            style={[
-              styles.rewardCard,
-              {
-                backgroundColor: theme.colors.card,
+              rewardResult.earnedXP
+            }{" "}
+            XP
+          </AppText>
 
-                borderColor: theme.colors.border,
+          <AppText
+            variant="title"
+            style={
+              styles.rewardTitle
+            }
+          >
+            Running
+          </AppText>
 
-                transform: [
+          {/* ====================================================
+              LEVEL STATUS
+              ==================================================== */}
+
+          {rewardResult
+            .activityLeveledUp ? (
+            <View
+              style={[
+                styles.levelUpCard,
+                {
+                  backgroundColor:
+                    theme.colors
+                      .cardAlt,
+
+                  borderColor:
+                    theme.colors
+                      .xp,
+                },
+              ]}
+            >
+              <AppText
+                style={[
+                  styles.levelUpText,
                   {
-                    scale: cardScale,
+                    color:
+                      theme.colors
+                        .xp,
                   },
-                ],
+                ]}
+              >
+                LEVEL UP!
+              </AppText>
+
+              <View
+                style={
+                  styles.levelChange
+                }
+              >
+                <AppText
+                  variant="secondary"
+                >
+                  LV.{" "}
+                  {
+                    rewardResult
+                      .activityLevelBefore
+                  }
+                </AppText>
+
+                <AppText
+                  style={[
+                    styles.arrow,
+                    {
+                      color:
+                        theme.colors
+                          .xp,
+                    },
+                  ]}
+                >
+                  →
+                </AppText>
+
+                <AppText
+                  style={[
+                    styles.newLevel,
+                    {
+                      color:
+                        theme.colors
+                          .xp,
+                    },
+                  ]}
+                >
+                  LV.{" "}
+                  {
+                    rewardResult
+                      .activityLevelAfter
+                  }
+                </AppText>
+              </View>
+            </View>
+          ) : (
+            <View
+              style={
+                styles.normalLevel
+              }
+            >
+              <AppText
+                variant="secondary"
+              >
+                Activity level
+              </AppText>
+
+              <AppText
+                variant="xp"
+              >
+                LV.{" "}
+                {
+                  rewardResult
+                    .activityLevelAfter
+                }
+              </AppText>
+            </View>
+          )}
+
+          {/* ====================================================
+              ANIMATED RUNNING XP
+              ==================================================== */}
+
+          <AppCard
+            style={
+              styles.progressCard
+            }
+          >
+            <AppText
+              variant="label"
+              style={
+                styles.progressTitle
+              }
+            >
+              RUNNING PROGRESS
+            </AppText>
+
+            {/*
+             * AnimatedXPBar starts at the XP Running had BEFORE
+             * this run, then visually awards the new XP.
+             *
+             * If it crosses a level:
+             *
+             * 480 / 500
+             *      ↓
+             * 500 / 500
+             *      ↓
+             * 🎉 LEVEL UP
+             *      ↓
+             * Level 2
+             *      ↓
+             * 0 / 500 -> remaining XP
+             */}
+
+            <AnimatedXPBar
+              xpBefore={
+                rewardResult
+                  .activityXPBefore
+              }
+              xpAfter={
+                rewardResult
+                  .activityXPAfter
+              }
+            />
+          </AppCard>
+
+          {/* ====================================================
+              PLAYER PROGRESS
+              ==================================================== */}
+
+          <View
+            style={[
+              styles.playerReward,
+              {
+                borderTopColor:
+                  theme.colors
+                    .border,
+
+                borderBottomColor:
+                  theme.colors
+                    .border,
+              },
+            ]}
+          >
+            <View>
+              <AppText
+                variant="label"
+              >
+                PLAYER
+              </AppText>
+
+              <AppText
+                variant="secondary"
+              >
+                Lifetime progression
+              </AppText>
+            </View>
+
+            <View
+              style={
+                styles.playerRewardRight
+              }
+            >
+              <AppText
+                variant="xp"
+              >
+                +
+                {
+                  rewardResult
+                    .earnedXP
+                }{" "}
+                XP
+              </AppText>
+
+              {rewardResult
+                .playerLeveledUp ? (
+                <AppText
+                  style={[
+                    styles.playerLevelUp,
+                    {
+                      color:
+                        theme.colors
+                          .xp,
+                    },
+                  ]}
+                >
+                  LV.{" "}
+                  {
+                    rewardResult
+                      .playerLevelBefore
+                  }{" "}
+                  → LV.{" "}
+                  {
+                    rewardResult
+                      .playerLevelAfter
+                  }
+                </AppText>
+              ) : (
+                <AppText
+                  variant="caption"
+                >
+                  Level{" "}
+                  {
+                    rewardResult
+                      .playerLevelAfter
+                  }
+                </AppText>
+              )}
+            </View>
+          </View>
+
+          {/* ====================================================
+              RUN SUMMARY
+              ==================================================== */}
+
+          <View
+            style={[
+              styles.runSummary,
+              {
+                backgroundColor:
+                  theme.colors.card,
+
+                borderColor:
+                  theme.colors
+                    .border,
               },
             ]}
           >
             <View
-              style={[
-                styles.rewardIcon,
-                {
-                  backgroundColor: theme.colors.cardAlt,
-                },
-              ]}
+              style={
+                styles.summaryItem
+              }
             >
-              <AppText style={styles.rewardEmoji}>🏃</AppText>
-            </View>
-
-            <AppText variant="pageTitle" style={styles.rewardTitle}>
-              RUN COMPLETE!
-            </AppText>
-
-            <AppText variant="secondary" style={styles.rewardSubtitle}>
-              Nice work. Your journey continues.
-            </AppText>
-
-            <Animated.View
-              style={{
-                transform: [
-                  {
-                    scale: xpScale,
-                  },
-                ],
-              }}
-            >
-              <AppText variant="xp" style={styles.bigXP}>
-                +{earnedXP} XP
+              <AppText
+                variant="caption"
+              >
+                DISTANCE
               </AppText>
-            </Animated.View>
 
-            <View style={styles.levelRow}>
-              <AppText style={styles.levelText}>Level {rewardLevel}</AppText>
-
-              <AppText variant="secondary">
-                {rewardLevelXP} / {xpNeededForNextLevel} XP
+              <AppText
+                variant="title"
+              >
+                {d} km
               </AppText>
             </View>
 
             <View
               style={[
-                styles.progressBackground,
+                styles.summaryDivider,
                 {
-                  backgroundColor: theme.colors.secondary,
+                  backgroundColor:
+                    theme.colors
+                      .border,
                 },
               ]}
-            >
-              <Animated.View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: progressWidth,
-
-                    backgroundColor: theme.colors.xp,
-                  },
-                ]}
-              />
-            </View>
-
-            <AppText variant="caption" style={styles.nextLevelText}>
-              {rewardXPRemaining} XP until Level {rewardLevel + 1}
-            </AppText>
-
-            <View
-              style={[
-                styles.summary,
-                {
-                  backgroundColor: theme.colors.background,
-                },
-              ]}
-            >
-              <View style={styles.summaryItem}>
-                <AppText style={styles.summaryNumber}>{distanceNumber}</AppText>
-
-                <AppText variant="label">KM</AppText>
-              </View>
-
-              <View
-                style={[
-                  styles.summaryDivider,
-                  {
-                    backgroundColor: theme.colors.border,
-                  },
-                ]}
-              />
-
-              <View style={styles.summaryItem}>
-                <AppText style={styles.summaryNumber}>{timeNumber}</AppText>
-
-                <AppText variant="label">MINUTES</AppText>
-              </View>
-
-              <View
-                style={[
-                  styles.summaryDivider,
-                  {
-                    backgroundColor: theme.colors.border,
-                  },
-                ]}
-              />
-
-              <View style={styles.summaryItem}>
-                <AppText variant="xp" style={styles.summaryNumber}>
-                  +{earnedXP}
-                </AppText>
-
-                <AppText variant="label">XP</AppText>
-              </View>
-            </View>
-
-            <AppButton
-              title={isSaving ? "Saving..." : "Continue"}
-              onPress={continueToHome}
-              disabled={isSaving}
-              style={styles.continueButton}
             />
-          </Animated.View>
-        </Animated.View>
-      </Modal>
-    </>
+
+            <View
+              style={
+                styles.summaryItem
+              }
+            >
+              <AppText
+                variant="caption"
+              >
+                TIME
+              </AppText>
+
+              <AppText
+                variant="title"
+              >
+                {t} min
+              </AppText>
+            </View>
+          </View>
+
+          {/* ====================================================
+              CONTINUE
+              ==================================================== */}
+
+          <View
+            style={
+              styles.continueButton
+            }
+          >
+            <AppButton
+              title="Continue"
+              onPress={() =>
+                router.replace(
+                  "/"
+                )
+              }
+            />
+          </View>
+        </View>
+      </AppScreen>
+    );
+  }
+
+  // ============================================================
+  // RUN LOGGER
+  // ============================================================
+
+  return (
+    <AppScreen>
+      {/* ========================================================
+          HEADER
+          ======================================================== */}
+
+      <View
+        style={
+          styles.header
+        }
+      >
+        <Pressable
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace(
+                  "/"
+                )
+          }
+          style={[
+            styles.back,
+            {
+              backgroundColor:
+                theme.colors.card,
+
+              borderColor:
+                theme.colors
+                  .border,
+            },
+          ]}
+        >
+          <AppText
+            style={
+              styles.backText
+            }
+          >
+            ‹
+          </AppText>
+        </Pressable>
+
+        <AppText
+          variant="title"
+        >
+          🏃 Running
+        </AppText>
+
+        <View
+          style={
+            styles.spacer
+          }
+        />
+      </View>
+
+      {/* ========================================================
+          CURRENT RUNNING LEVEL
+          ======================================================== */}
+
+      <View
+        style={[
+          styles.currentSkill,
+          {
+            borderBottomColor:
+              theme.colors
+                .border,
+          },
+        ]}
+      >
+        <View>
+          <AppText
+            variant="label"
+          >
+            CURRENT SKILL
+          </AppText>
+
+          <AppText
+            variant="title"
+            style={
+              styles.skillLevel
+            }
+          >
+            Running · Level{" "}
+            {
+              currentRunningProgression
+                .level
+            }
+          </AppText>
+        </View>
+
+        <View
+          style={
+            styles.skillProgress
+          }
+        >
+          <AppText
+            variant="caption"
+            style={
+              styles.skillXP
+            }
+          >
+            {
+              currentRunningProgression
+                .xpInLevel
+            }{" "}
+            /{" "}
+            {
+              currentRunningProgression
+                .xpForLevel
+            }{" "}
+            XP
+          </AppText>
+
+          <ProgressBar
+            progress={
+              currentRunningProgression
+                .progress
+            }
+          />
+        </View>
+      </View>
+
+      {/* ========================================================
+          ESTIMATED REWARD
+          ======================================================== */}
+
+      <AppCard
+        variant="alt"
+        style={
+          styles.reward
+        }
+      >
+        <AppText
+          style={
+            styles.rewardIcon
+          }
+        >
+          ⚡
+        </AppText>
+
+        <View>
+          <AppText
+            variant="label"
+          >
+            ESTIMATED REWARD
+          </AppText>
+
+          <AppText
+            variant="xp"
+          >
+            +{xp} XP
+          </AppText>
+        </View>
+      </AppCard>
+
+      {/* ========================================================
+          DISTANCE
+          ======================================================== */}
+
+      <AppText
+        variant="label"
+        style={
+          styles.label
+        }
+      >
+        DISTANCE (KM)
+      </AppText>
+
+      <AppInput
+        value={distance}
+        onChangeText={
+          setDistance
+        }
+        placeholder="5"
+        keyboardType="decimal-pad"
+      />
+
+      {/* ========================================================
+          TIME
+          ======================================================== */}
+
+      <AppText
+        variant="label"
+        style={
+          styles.label
+        }
+      >
+        TIME (MIN)
+      </AppText>
+
+      <AppInput
+        value={time}
+        onChangeText={
+          setTime
+        }
+        placeholder="30"
+        keyboardType="decimal-pad"
+      />
+
+      {/* ========================================================
+          NOTE
+          ======================================================== */}
+
+      <AppText
+        variant="label"
+        style={
+          styles.label
+        }
+      >
+        NOTE (OPTIONAL)
+      </AppText>
+
+      <AppInput
+        value={note}
+        onChangeText={
+          setNote
+        }
+        placeholder="How did it go?"
+        multiline
+      />
+
+      {/* ========================================================
+          SAVE
+          ======================================================== */}
+
+      <View
+        style={
+          styles.button
+        }
+      >
+        <AppButton
+          title="Save Run"
+          onPress={save}
+          disabled={
+            isSaving
+          }
+        />
+      </View>
+    </AppScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  backButton: {
-    alignSelf: "flex-start",
+// ============================================================
+// STYLES
+// ============================================================
 
-    marginBottom: 28,
-  },
+const styles =
+  StyleSheet.create({
+    // ----------------------------------------------------------
+    // LOGGER
+    // ----------------------------------------------------------
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      marginBottom: 20,
+    },
 
-    marginBottom: 38,
-  },
+    back: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
 
-  headerText: {
-    flex: 1,
-  },
+    backText: {
+      fontSize: 28,
+      lineHeight: 30,
+      marginTop: -3,
+    },
 
-  iconContainer: {
-    width: 64,
-    height: 64,
+    spacer: {
+      width: 40,
+    },
 
-    borderRadius: 20,
+    currentSkill: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingBottom: 14,
+      marginBottom: 14,
 
-    justifyContent: "center",
-    alignItems: "center",
+      borderBottomWidth:
+        StyleSheet.hairlineWidth,
+    },
 
-    marginRight: 16,
-  },
+    skillLevel: {
+      fontSize: 14,
+      marginTop: 2,
+    },
 
-  icon: {
-    fontSize: 34,
-  },
+    skillProgress: {
+      flex: 1,
+      marginLeft: 20,
+    },
 
-  inputSection: {
-    gap: 20,
-  },
+    skillXP: {
+      textAlign: "right",
+      marginBottom: 5,
+      fontSize: 10,
+      fontWeight: "700",
+    },
 
-  xpCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    reward: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
 
-    padding: 20,
+    rewardIcon: {
+      fontSize: 24,
+    },
 
-    marginTop: 28,
-  },
+    label: {
+      marginTop: 22,
+      marginBottom: 8,
+    },
 
-  xpTitle: {
-    fontSize: 17,
+    button: {
+      marginTop: 26,
+    },
 
-    marginTop: 4,
-  },
+    // ----------------------------------------------------------
+    // REWARD SCREEN
+    // ----------------------------------------------------------
 
-  xpAmount: {
-    fontSize: 22,
-  },
+    rewardScreen: {
+      flex: 1,
+      alignItems: "center",
+      paddingTop: 18,
+    },
 
-  completeButton: {
-    marginTop: 20,
-  },
+    bigIcon: {
+      width: 72,
+      height: 72,
+      borderRadius: 16,
+      borderWidth: 1,
+      alignItems: "center",
+      justifyContent:
+        "center",
+    },
 
-  modalBackground: {
-    flex: 1,
+    bigEmoji: {
+      fontSize: 36,
+    },
 
-    backgroundColor: "rgba(5, 6, 10, 0.94)",
+    bigXP: {
+      fontSize: 32,
+      lineHeight: 38,
+      fontWeight: "900",
+      marginTop: 15,
+    },
 
-    justifyContent: "center",
+    rewardTitle: {
+      fontSize: 18,
+      marginTop: 2,
+    },
 
-    paddingHorizontal: 20,
-  },
+    // ----------------------------------------------------------
+    // LEVEL UP
+    // ----------------------------------------------------------
 
-  rewardCard: {
-    borderRadius: 30,
-    borderWidth: 1,
+    levelUpCard: {
+      width: "100%",
+      borderRadius: 12,
+      borderWidth: 1,
+      alignItems: "center",
+      paddingVertical: 13,
+      marginTop: 18,
+    },
 
-    paddingHorizontal: 24,
-    paddingVertical: 30,
+    levelUpText: {
+      fontSize: 18,
+      fontWeight: "900",
+      letterSpacing: 2,
+    },
 
-    alignItems: "center",
-  },
+    levelChange: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 6,
+    },
 
-  rewardIcon: {
-    width: 82,
-    height: 82,
+    arrow: {
+      fontSize: 18,
+      fontWeight: "900",
+      marginHorizontal: 14,
+    },
 
-    borderRadius: 41,
+    newLevel: {
+      fontSize: 20,
+      fontWeight: "900",
+    },
 
-    justifyContent: "center",
-    alignItems: "center",
+    normalLevel: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      marginTop: 20,
+    },
 
-    marginBottom: 20,
-  },
+    // ----------------------------------------------------------
+    // PROGRESS
+    // ----------------------------------------------------------
 
-  rewardEmoji: {
-    fontSize: 42,
-  },
+    progressCard: {
+      width: "100%",
+      marginTop: 12,
+    },
 
-  rewardTitle: {
-    fontSize: 27,
-    letterSpacing: 0.5,
+    progressTitle: {
+      marginBottom: 9,
+    },
 
-    textAlign: "center",
-  },
+    // ----------------------------------------------------------
+    // PLAYER
+    // ----------------------------------------------------------
 
-  rewardSubtitle: {
-    marginTop: 7,
+    playerReward: {
+      width: "100%",
+      flexDirection: "row",
+      justifyContent:
+        "space-between",
+      alignItems: "center",
 
-    textAlign: "center",
-  },
+      paddingVertical: 12,
+      marginTop: 14,
 
-  bigXP: {
-    fontSize: 44,
+      borderTopWidth:
+        StyleSheet.hairlineWidth,
 
-    marginTop: 26,
-    marginBottom: 28,
-  },
+      borderBottomWidth:
+        StyleSheet.hairlineWidth,
+    },
 
-  levelRow: {
-    width: "100%",
+    playerRewardRight: {
+      alignItems:
+        "flex-end",
+    },
 
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
+    playerLevelUp: {
+      fontSize: 11,
+      fontWeight: "800",
+      marginTop: 2,
+    },
 
-  levelText: {
-    fontSize: 15,
-    fontWeight: "800",
-  },
+    // ----------------------------------------------------------
+    // RUN SUMMARY
+    // ----------------------------------------------------------
 
-  progressBackground: {
-    width: "100%",
-    height: 12,
+    runSummary: {
+      width: "100%",
+      flexDirection: "row",
+      alignItems: "center",
+      borderWidth: 1,
+      borderRadius: 12,
+      marginTop: 14,
+      paddingVertical: 10,
+    },
 
-    borderRadius: 20,
+    summaryItem: {
+      flex: 1,
+      alignItems: "center",
+    },
 
-    overflow: "hidden",
+    summaryDivider: {
+      width:
+        StyleSheet.hairlineWidth,
+      height: 30,
+    },
 
-    marginTop: 12,
-  },
-
-  progressFill: {
-    height: "100%",
-
-    borderRadius: 20,
-  },
-
-  nextLevelText: {
-    alignSelf: "flex-start",
-
-    marginTop: 9,
-  },
-
-  summary: {
-    width: "100%",
-
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-
-    borderRadius: 20,
-
-    paddingVertical: 18,
-
-    marginTop: 26,
-  },
-
-  summaryItem: {
-    flex: 1,
-
-    alignItems: "center",
-  },
-
-  summaryNumber: {
-    fontSize: 20,
-    fontWeight: "800",
-  },
-
-  summaryDivider: {
-    width: 1,
-    height: 32,
-  },
-
-  continueButton: {
-    width: "100%",
-
-    marginTop: 24,
-  },
-});
+    continueButton: {
+      width: "100%",
+      marginTop: 18,
+    },
+  });
